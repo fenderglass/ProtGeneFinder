@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import shutil
 import os
 import sys
@@ -58,8 +59,8 @@ def split_n(lst, n):
     out_lst = []
     last = 0.0
 
-    while round(last) < len(lst):
-        out_lst.append(lst[round(last):round(last + avg)])
+    while int(round(last)) < len(lst):
+        out_lst.append(lst[int(round(last)):int(round(last + avg))])
         last += avg
 
     assert len(out_lst) == n
