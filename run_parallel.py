@@ -5,6 +5,8 @@ import shutil
 import os
 import sys
 import subprocess
+from threading import Thread
+from time import sleep
 
 from make_proteome import make_proteome
 
@@ -26,7 +28,8 @@ def run_instance(proteome_file, spectrum_file, work_dir):
                                              "spectra.msalign"))
     shutil.copy2(input_config, os.path.join(work_dir, "msinput"))
 
-    subprocess.check_call(MSALIGN_CMD + [work_dir])
+    subprocess.check_call(MSALIGN_CMD + [work_dir],
+                          stdout=open(os.devnull, "w"))
 
 
 def read_spectrum_file(filename):
@@ -83,6 +86,7 @@ def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
 
     proc_per_half = int(num_proc / 2)
     spec_splitted = split_n(spectras_text, proc_per_half)
+    threads = []
 
     def run_for_half(inst_pref, inst_prot):
         for i in range(proc_per_half):
@@ -96,11 +100,16 @@ def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
             write_spectras(spec_splitted[i], inst_spec)
 
             print("Running {0} instance".format(inst_name))
-            #should be run in parallel
-            run_instance(inst_prot, inst_spec, inst_workdir)
+            thread = Thread(target=run_instance,
+                            args=(inst_prot, inst_spec, inst_workdir))
+            thread.start()
+            threads.append(thread)
 
     run_for_half("noshift", prot_file_1)
     run_for_half("halfshift", prot_file_2)
+
+    for t in threads:
+        t.join()
 
 
 def main():
