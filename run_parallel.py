@@ -21,6 +21,8 @@ def run_instance(proteome_file, spectrum_file, work_dir):
     os.mkdir(os.path.join(work_dir, "msoutput"))
     os.mkdir(os.path.join(work_dir, "html"))
     os.mkdir(os.path.join(work_dir, "xml"))
+    shutil.copytree(os.path.join(MSALIGN_DIR, "etc"), work_dir)
+    shutil.copytree(os.path.join(MSALIGN_DIR, "xsl"), work_dir)
 
     input_config = os.path.join(MSALIGN_DIR, "msinput", "input.properties")
     shutil.copy2(proteome_file, os.path.join(work_dir, "msinput", "prot.fasta"))
