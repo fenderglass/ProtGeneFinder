@@ -10,7 +10,7 @@ from time import sleep
 
 from make_proteome import make_proteome
 
-MSALIGN_DIR = "/home/fenderglass/Bioinf/ProtGeneFinder/msalign+/"
+MSALIGN_DIR = os.environ["MSALIGN_DIR"]
 MSALIGN_CMD = ["java", "-Xmx12G", "-classpath", "jar/*:",
                "edu.ucsd.msalign.align.console.MsAlignPipeline"]
 SLICE_SIZE = 512
@@ -32,7 +32,6 @@ def run_instance(proteome_file, spectrum_file, work_dir):
                                              "spectra.msalign"))
     shutil.copy2(input_config, os.path.join(work_dir, "msinput"))
 
-    return 0
     subprocess.check_call(MSALIGN_CMD + [work_dir],
                           stdout=open(os.devnull, "w"))
 
