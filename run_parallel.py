@@ -10,7 +10,7 @@ from time import sleep
 
 from make_proteome import make_proteome
 
-MSALIGN_DIR = "/home/volrath/Bioinf/ProtGeneFinder/msalign+/"
+MSALIGN_DIR = "/home/fenderglass/Bioinf/ProtGeneFinder/msalign+/"
 MSALIGN_CMD = ["java", "-Xmx12G", "-classpath", "jar/*:",
                "edu.ucsd.msalign.align.console.MsAlignPipeline"]
 SLICE_SIZE = 512
@@ -32,6 +32,7 @@ def run_instance(proteome_file, spectrum_file, work_dir):
                                              "spectra.msalign"))
     shutil.copy2(input_config, os.path.join(work_dir, "msinput"))
 
+    return 0
     subprocess.check_call(MSALIGN_CMD + [work_dir],
                           stdout=open(os.devnull, "w"))
 
@@ -62,13 +63,23 @@ def write_spectras(spectra_strings, out_file):
 
 
 def split_n(lst, n):
-    avg = len(lst) / float(n)
+    total_len = sum(map(len, lst))
+    avg = total_len / float(n)
     out_lst = []
     last = 0.0
+    lst_cur = 0
 
-    while int(round(last)) < len(lst):
-        out_lst.append(lst[int(round(last)):int(round(last + avg))])
-        last += avg
+    while len(out_lst) < n:
+        slice = []
+        slice_len = 0.0
+
+        while (last < avg * (len(out_lst) + 1) and
+               lst_cur < len(lst)):
+            slice.append(lst[lst_cur])
+            last += len(slice[-1])
+            lst_cur += 1
+
+        out_lst.append(slice)
 
     assert len(out_lst) == n
     return out_lst
