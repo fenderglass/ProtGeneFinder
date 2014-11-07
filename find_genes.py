@@ -5,12 +5,10 @@ from collections import namedtuple, defaultdict
 from itertools import combinations
 
 
-GENOME_LEN = 4857432
-SLICE_SIZE = 500
 E_VALUE = 0.01
 
-Prsm = namedtuple("Prsm", ["prsm_id", "spec_id", "prot_name",
-                           "first_res", "last_res", "peptide", "e_value"])
+Prsm = namedtuple("Prsm", ["spec_id", "prot_name", "first_res", "last_res",
+                           "peptide", "e_value"])
 Interval = namedtuple("Interval", ["spectrum_id", "start", "end", "strand"])
 Family = namedtuple("Family", ["spectrum_ids", "start", "end"])
 
@@ -23,28 +21,26 @@ def parse_table(filename):
                 continue
 
             vals = line.split()
-            rows.append(Prsm(int(vals[1]), int(vals[2]), vals[9], int(vals[11]),
+            rows.append(Prsm(int(vals[2]), vals[9], int(vals[11]),
                              int(vals[12]), vals[13], float(vals[18])))
 
     return rows
 
 
-def get_intervals(records, slice_length, genome_length):
+def get_intervals(records):
     intervals = []
     for rec in records:
-        meta = rec.prot_name.split("_shift_")[1]
-        direction, shift_len, slice_num = meta.split("_")
+        meta = rec.prot_name.split("::")[1]
+        direction, shift_len, genome_pos = meta.split("_")
 
-        genomic_start = ((slice_length * int(slice_num) + rec.first_res) * 3
-                          - int(shift_len))
-        genomic_end = ((slice_length * int(slice_num) + rec.last_res) * 3
-                        - int(shift_len))
-        if direction == "rev":
-            genomic_start = genome_length - genomic_start - 1
-            genomic_end = genome_length - genomic_end - 1
-            genomic_start, genomic_end = genomic_end, genomic_start
-        else:
-            assert direction == "fwd"
+        if direction == "fwd":
+            genomic_start = int(genome_pos) + (rec.first_res - 1) * 3
+            genomic_end = int(genome_pos) + (rec.last_res - 1) * 3
+        elif direction == "rev":
+            genomic_start = int(genome_pos) - (rec.last_res - 1) * 3
+            genomic_end = int(genome_pos) - (rec.first_res - 1) * 3
+        
+        assert genomic_end >= genomic_start
 
         intervals.append(Interval(rec.spec_id, genomic_start, genomic_end,
                                   1 if direction == "fwd" else -1))
@@ -101,17 +97,20 @@ def print_table(records, intervals, families):
         print("")
 
 
-def get_data(table_file, slice_size, genome_size, e_value):
-    records = parse_table(table_file)
+def get_data(table_files, e_value):
+    records = []
+    for file in table_files:
+        records.extend(parse_table(file))
+
     records = filter_evalue(records, e_value)
-    intervals = get_intervals(records, slice_size, genome_size)
+    intervals = get_intervals(records)
     families = get_families(intervals)
     return records, intervals, families
 
 
 def main():
-    table_file = sys.argv[1]
-    print_table(*get_data(table_file, SLICE_SIZE, GENOME_LEN, E_VALUE))
+    table_files = sys.argv[1:]
+    print_table(*get_data(table_files, E_VALUE))
 
 
 ##################
