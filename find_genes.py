@@ -20,7 +20,7 @@ def parse_table(filename):
             if not line or line.startswith("Data"):
                 continue
 
-            vals = line.split()
+            vals = line.split("\t")
             rows.append(Prsm(int(vals[2]), vals[9], int(vals[11]),
                              int(vals[12]), vals[13], float(vals[18])))
 
@@ -39,7 +39,7 @@ def get_intervals(records):
         elif direction == "rev":
             genomic_start = int(genome_pos) - (rec.last_res - 1) * 3
             genomic_end = int(genome_pos) - (rec.first_res - 1) * 3
-        
+
         assert genomic_end >= genomic_start
 
         intervals.append(Interval(rec.spec_id, genomic_start, genomic_end,
@@ -97,10 +97,8 @@ def print_table(records, intervals, families):
         print("")
 
 
-def get_data(table_files, e_value):
-    records = []
-    for file in table_files:
-        records.extend(parse_table(file))
+def get_data(table_file, e_value):
+    records = parse_table(table_file)
 
     records = filter_evalue(records, e_value)
     intervals = get_intervals(records)
@@ -109,8 +107,7 @@ def get_data(table_files, e_value):
 
 
 def main():
-    table_files = sys.argv[1:]
-    print_table(*get_data(table_files, E_VALUE))
+    print_table(*get_data(sys.argv[1], E_VALUE))
 
 
 ##################

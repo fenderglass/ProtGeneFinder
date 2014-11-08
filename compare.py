@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 
-from convert import get_data
+from find_genes import get_data
 import sys
 
 
-GENOME_LEN = 4857432
-SLICE_SIZE = 500
 E_VALUE = 0.01
 
 
 def compare(master_table, slave_table):
-    ms_records, ms_intervals, ms_families = get_data(master_table, SLICE_SIZE,
-                                                     GENOME_LEN, E_VALUE)
-    sl_records, sl_intervals, sl_families = get_data(slave_table, SLICE_SIZE,
-                                                     GENOME_LEN, E_VALUE)
+    ms_records, ms_intervals, ms_families = get_data(master_table, E_VALUE)
+    sl_records, sl_intervals, sl_families = get_data(slave_table, E_VALUE)
 
     sl_family_by_spec = {}
     for fam in sl_families:
