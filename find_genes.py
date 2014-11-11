@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import re
 from collections import namedtuple, defaultdict
 from itertools import combinations
 
@@ -27,7 +28,7 @@ def parse_table(filename):
     return rows
 
 
-def get_intervals(records):
+def get_intervals_genome(records):
     intervals = []
     for rec in records:
         meta = rec.prot_name.split("::")[1]
@@ -44,6 +45,41 @@ def get_intervals(records):
 
         intervals.append(Interval(rec.spec_id, genomic_start, genomic_end,
                                   1 if direction == "fwd" else -1))
+
+    return intervals
+
+
+def get_intervals_proteome(records, protein_table):
+    prot_table_data = {}
+    with open(protein_table, "r") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            vals = line.strip().split("\t")
+            start, end = int(vals[2]), int(vals[3])
+            strand = 1 if vals[4] == "+" else -1
+            if vals[6] != "-":
+                prot_id = vals[6]
+            else:
+                prot_id = vals[7].split(".")[0] #mwahaha
+
+            prot_table_data[prot_id] = (start, end, strand)
+
+    intervals = []
+    fail_counter = 0
+    gen_id_re = re.compile(".*(^|\s)GN=(\S*)($|\s).*")
+    for rec in records:
+        prot_id = gen_id_re.match(rec.prot_name).group(2)
+        if prot_id not in prot_table_data:
+            fail_counter += 1
+            continue
+
+        start = prot_table_data[prot_id][0]
+        end = prot_table_data[prot_id][1]
+        strand = prot_table_data[prot_id][2]
+        intervals.append(Interval(rec.spec_id, start, end, strand))
+
+    print("Total fails:", fail_counter)
 
     return intervals
 
@@ -97,17 +133,26 @@ def print_table(records, intervals, families):
         print("")
 
 
-def get_data(table_file, e_value):
+def get_data_genome(table_file, e_value):
     records = parse_table(table_file)
 
     records = filter_evalue(records, e_value)
-    intervals = get_intervals(records)
+    intervals = get_intervals_genome(records)
+    families = get_families(intervals)
+    return records, intervals, families
+
+
+def get_data_proteome(results_file, prot_table, e_value):
+    records = parse_table(results_file)
+
+    records = filter_evalue(records, e_value)
+    intervals = get_intervals_proteome(records, prot_table)
     families = get_families(intervals)
     return records, intervals, families
 
 
 def main():
-    print_table(*get_data(sys.argv[1], E_VALUE))
+    print_table(*get_data_genome(sys.argv[1], E_VALUE))
 
 
 ##################
