@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys
 import re
 from collections import namedtuple, defaultdict
@@ -8,10 +9,23 @@ from itertools import combinations
 
 E_VALUE = 0.01
 
-Prsm = namedtuple("Prsm", ["spec_id", "prot_name", "first_res", "last_res",
-                           "peptide", "e_value"])
-Interval = namedtuple("Interval", ["spectrum_id", "start", "end", "strand"])
-Family = namedtuple("Family", ["spectrum_ids", "start", "end"])
+class Prsm:
+    def __init__(self, prsm_id, spec_id, prot_name, first_res,
+                 last_res, peptide, p_value, e_value):
+        self.prsm_id = prsm_id
+        self.spec_id = spec_id
+        self.prot_name = prot_name
+        self.first_res = first_res
+        self.last_res = last_res
+        self.peptide = peptide
+        self.p_value = p_value
+        self.e_value = e_value
+        self.interval = None
+
+#Prsm = namedtuple("Prsm", ["spec_id", "prot_name", "first_res", "last_res",
+#                           "peptide", "p_value", "e_value"])
+Interval = namedtuple("Interval", ["start", "end", "strand"])
+Family = namedtuple("Family", ["prsms", "start", "end"])
 
 def parse_table(filename):
     rows = []
@@ -22,14 +36,14 @@ def parse_table(filename):
                 continue
 
             vals = line.split("\t")
-            rows.append(Prsm(int(vals[2]), vals[9], int(vals[11]),
-                             int(vals[12]), vals[13], float(vals[18])))
+            rows.append(Prsm(int(vals[1]), int(vals[2]), vals[9], int(vals[11]),
+                             int(vals[12]), vals[13], float(vals[17]),
+                             float(vals[18])))
 
     return rows
 
 
 def get_intervals_genome(records):
-    intervals = []
     for rec in records:
         meta = rec.prot_name.split("::")[1]
         direction, shift_len, genome_pos = meta.split("_")
@@ -43,10 +57,8 @@ def get_intervals_genome(records):
 
         assert genomic_end >= genomic_start
 
-        intervals.append(Interval(rec.spec_id, genomic_start, genomic_end,
-                                  1 if direction == "fwd" else -1))
-
-    return intervals
+        rec.interval = Interval(genomic_start, genomic_end,
+                                1 if direction == "fwd" else -1)
 
 
 def get_intervals_proteome(records, protein_table):
@@ -65,69 +77,84 @@ def get_intervals_proteome(records, protein_table):
 
             prot_table_data[prot_id] = (start, end, strand)
 
-    intervals = []
     fail_counter = 0
     gen_id_re = re.compile(".*(^|\s)GN=(\S*)($|\s).*")
     for rec in records:
         prot_id = gen_id_re.match(rec.prot_name).group(2)
         if prot_id not in prot_table_data:
+            rec.interval = Interval(-1, -1, 1)
             fail_counter += 1
             continue
 
         start = prot_table_data[prot_id][0]
         end = prot_table_data[prot_id][1]
         strand = prot_table_data[prot_id][2]
-        intervals.append(Interval(rec.spec_id, start, end, strand))
+        rec.interval = Interval(start, end, strand)
 
     print("Total fails:", fail_counter)
 
-    return intervals
+
+def get_families_proteome(records):
+    families = []
+    by_prsm = {r.prsm_id : r for r in records}
+
+    group_spectra = defaultdict(list)
+    for rec in records:
+        group_spectra[rec.prot_name].append(rec)
+
+    for group in group_spectra.values():
+        start = sys.maxint
+        end = 0
+        prsm_ids = list(map(lambda r: r.prsm_id, group))
+        for rec in group:
+            start = min(start, by_prsm[rec.prsm_id].interval.start)
+            end = max(end, by_prsm[rec.prsm_id].interval.end)
+        families.append(Family(prsm_ids, start, end))
+
+    return families
+
+
+def get_families_genome(records):
+    sets = {r.prsm_id : MakeSet(r.prsm_id) for r in records}
+    for rec_1, rec_2 in combinations(records, 2):
+        int_1 = rec_1.interval
+        int_2 = rec_2.interval
+        #test for overlapping
+        if ((int_1.start <= int_2.start and int_2.end <= int_1.end) or
+            (int_2.start <= int_1.start and int_1.end <= int_2.end)):
+            Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
+
+    by_family = defaultdict(list)
+    for s in sets.values():
+        by_family[Find(s)].append(s.data)
+    by_prsm = {r.prsm_id : r for r in records}
+
+    families = []
+    for prsms in by_family.values():
+        start = min([by_prsm[p].interval.start for p in prsms])
+        end = max([by_prsm[p].interval.end for p in prsms])
+        families.append(Family(prsms, start, end))
+
+    return families
 
 
 def filter_evalue(records, e_value):
     return list(filter(lambda r: r.e_value < e_value, records))
 
 
-def get_families(intervals):
-    sets = {i.spectrum_id : MakeSet(i.spectrum_id) for i in intervals}
-    for int_1, int_2 in combinations(intervals, 2):
-        #test for overlapping
-        if ((int_1.start <= int_2.start and int_2.end <= int_1.end) or
-            (int_2.start <= int_1.start and int_1.end <= int_2.end)):
-            Union(sets[int_1.spectrum_id], sets[int_2.spectrum_id])
-
-    by_family = defaultdict(list)
-    for s in sets.values():
-        by_family[Find(s)].append(s.data)
-    by_spectrum = {}
-    for i in intervals:
-        by_spectrum[i.spectrum_id] = i
-
-    families = []
-    for fam in by_family.values():
-        spectrums = fam
-        start = min([by_spectrum[i].start for i in spectrums])
-        end = max([by_spectrum[i].end for i in spectrums])
-        families.append(Family(spectrums, start, end))
-
-    return families
-
-
-def print_table(records, intervals, families):
-    rec_by_id = {rec.spec_id : rec for rec in records}
-    int_by_id = {i.spectrum_id : i for i in intervals}
+def print_table(records, families):
+    rec_by_prsm = {rec.prsm_id : rec for rec in records}
     for i, family in enumerate(sorted(families, key=lambda f: f.start)):
         prot_len = int((family.end - family.start) / 3)
         print("Family {0}\t{1}\t{2}".format(i, family.start, prot_len))
 
-        by_eval = sorted(family.spectrum_ids, key=lambda p: rec_by_id[p].e_value)
-        for spec in by_eval:
-            interval = int_by_id[spec]
-            record = rec_by_id[spec]
-            prot_len = int((interval.end - interval.start) / 3)
-            sign = "+" if interval.strand > 0 else "-"
+        by_eval = sorted(family.prsms, key=lambda p: rec_by_prsm[p].e_value)
+        for prsm in by_eval:
+            record = rec_by_prsm[prsm]
+            prot_len = int((record.interval.end - record.interval.start) / 3)
+            sign = "+" if record.interval.strand > 0 else "-"
             print("\t{0}\t{1}\t{2}\t{3:4.2e}\t{4}\t{5}"
-                    .format(interval.start, prot_len, sign,
+                    .format(record.interval.start, prot_len, sign,
                             record.e_value, record.spec_id, record.peptide))
 
         print("")
@@ -135,22 +162,24 @@ def print_table(records, intervals, families):
 
 def get_data_genome(table_file, e_value):
     records = parse_table(table_file)
+    get_intervals_genome(records)
 
-    records = filter_evalue(records, e_value)
-    intervals = get_intervals_genome(records)
-    families = get_families(intervals)
-    return records, intervals, families
+    filtered_records = filter_evalue(records, e_value)
+    families = get_families_genome(filtered_records)
+
+    return records, families
 
 
 def get_data_proteome(results_file, prot_table, e_value):
     records = parse_table(results_file)
+    get_intervals_proteome(records, prot_table)
 
-    records = filter_evalue(records, e_value)
-    intervals = get_intervals_proteome(records, prot_table)
-    families = get_families(intervals)
-    return records, intervals, families
+    filtered_records = filter_evalue(records, e_value)
+    families = get_families_proteome(filtered_records)
+    return records, families
 
 
+#TODO: collapse similar spectras
 def main():
     print_table(*get_data_genome(sys.argv[1], E_VALUE))
 
