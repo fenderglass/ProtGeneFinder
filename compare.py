@@ -50,10 +50,6 @@ def compare(ref_records, ref_families, qry_records, qry_families):
 
         ref_rec = ref_rec_by_spec[pro_spec]
         qry_rec = qry_rec_by_spec[pro_spec]
-        #p_val_ref = ref_rec_by_spec[pro_spec].p_value
-        #e_val_ref = ref_rec_by_spec[pro_spec].e_value
-        #p_val_qry = qry_rec_by_spec[pro_spec].p_value
-        #e_val_qry = qry_rec_by_spec[pro_spec].e_value
 
         start_ref = str(r_fam.start)
         if matched_qry_fam is None:

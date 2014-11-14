@@ -22,8 +22,6 @@ class Prsm:
         self.e_value = e_value
         self.interval = None
 
-#Prsm = namedtuple("Prsm", ["spec_id", "prot_name", "first_res", "last_res",
-#                           "peptide", "p_value", "e_value"])
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 Family = namedtuple("Family", ["prsms", "start", "end"])
 
