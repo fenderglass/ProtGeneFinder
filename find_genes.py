@@ -44,6 +44,7 @@ def parse_table(filename):
 
 
 def get_intervals_genome(records):
+    CONV_SHIFT = 1
     for rec in records:
         meta = rec.prot_name.split("::")[1]
         direction, shift_len, genome_pos = meta.split("_")
@@ -57,7 +58,8 @@ def get_intervals_genome(records):
 
         assert genomic_end >= genomic_start
 
-        rec.interval = Interval(genomic_start, genomic_end,
+        rec.interval = Interval(genomic_start + CONV_SHIFT,
+                                genomic_end + CONV_SHIFT,
                                 1 if direction == "fwd" else -1)
 
 
