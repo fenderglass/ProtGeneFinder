@@ -7,6 +7,7 @@ import sys
 
 E_VALUE = 0.01
 PROT_REF = True
+ONLY_MISSMATCHED = False
 
 
 #TODO: resolve problems with gene names lookup
@@ -36,7 +37,7 @@ def compare(ref_records, ref_families, qry_records, qry_families):
             qry_rec_by_spec[rec.spec_id] = rec
     ######################
 
-    print("Fam_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
+    print("Fam_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
           "Qry_eval\tRef_start\tQry_start")
     for f_num, r_fam in enumerate(ref_families):
         matched_qry_fam = None
@@ -48,23 +49,30 @@ def compare(ref_records, ref_families, qry_records, qry_families):
                 matched_qry_fam = qry_family_by_spec[pro_spec]
                 break
 
+        if matched_qry_fam and ONLY_MISSMATCHED:
+            continue
+
         ref_rec = ref_rec_by_spec[pro_spec]
         qry_rec = qry_rec_by_spec[pro_spec]
 
-        start_ref = str(r_fam.start)
-        if matched_qry_fam is None:
-            start_qry = str(qry_rec_by_spec[pro_spec].interval.start)
-            found = "-"
-        else:
-            start_qry = str(matched_qry_fam.start)
+        #start_ref = str(r_fam.start)
+        start_ref = str(ref_rec_by_spec[pro_spec].interval.start)
+        start_qry = str(qry_rec_by_spec[pro_spec].interval.start)
+        if matched_qry_fam:
+            #start_qry = str(matched_qry_fam.start)
             found = "+"
+        else:
+            #start_qry = str(qry_rec_by_spec[pro_spec].interval.start)
+            found = "-"
 
         start_ref = start_ref if start_ref != "-1" else "n/a"
         start_qry = start_qry if start_qry != "-1" else "n/a"
 
-        print("{0}\t{1}\t{2:6.2e}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6}\t\t{7}"
-              .format(f_num, found, ref_rec.p_value, ref_rec.e_value,
+        print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t{7}\t\t{8}"
+              .format(f_num, pro_spec, found, ref_rec.p_value, ref_rec.e_value,
                       qry_rec.p_value, qry_rec.e_value, start_ref, start_qry))
+        #print(qry_rec.peptide)
+        print(qry_rec.peptide, ref_rec.peptide, pro_spec)
 
 
 def main():
