@@ -54,11 +54,6 @@ def get_intervals_genome(records):
             genomic_start = int(genome_pos) - (rec.last_res - 1) * 3
             genomic_end = int(genome_pos) - (rec.first_res - 1) * 3
 
-        #if rec.spec_id == 2256:
-        #    print(genomic_start, genomic_end)
-        #if int(genome_pos) == 4296961:
-        #    print(genomic_start, genomic_end)
-
         assert genomic_end >= genomic_start
 
         rec.interval = Interval(genomic_start + CONV_SHIFT,
@@ -91,10 +86,18 @@ def get_intervals_proteome(records, protein_table):
             fail_counter += 1
             continue
 
-        start = prot_table_data[prot_id][0] + (rec.first_res - 1) * 3
-        end = prot_table_data[prot_id][0] + (rec.last_res - 1) * 3
-        #end = prot_table_data[prot_id][1] + (rec.last_res - 1) * 3
-        strand = prot_table_data[prot_id][2]
+        prot_rec = prot_table_data[prot_id]
+        prot_len = prot_rec[1] - prot_rec[0] + 1
+        assert prot_len > 0
+        strand = prot_rec[2]
+
+        if prot_rec[2] > 0:
+            start = prot_rec[0] + (rec.first_res - 1) * 3
+            end = prot_rec[0] + (rec.last_res - 1) * 3
+        else:
+            start = prot_rec[0] + (prot_len - (rec.last_res - 1) * 3 - 1)
+            end = prot_rec[0] + (prot_len - (rec.first_res - 1) * 3 - 1)
+
         rec.interval = Interval(start, end, strand)
 
     #print("Total fails:", fail_counter)

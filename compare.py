@@ -55,15 +55,13 @@ def compare(ref_records, ref_families, qry_records, qry_families):
         ref_rec = ref_rec_by_spec[pro_spec]
         qry_rec = qry_rec_by_spec[pro_spec]
 
-        #start_ref = str(r_fam.start)
         start_ref = str(ref_rec_by_spec[pro_spec].interval.start)
         start_qry = str(qry_rec_by_spec[pro_spec].interval.start)
-        if matched_qry_fam:
+        found = "+" if matched_qry_fam else "-"
+        #if matched_qry_fam:
             #start_qry = str(matched_qry_fam.start)
-            found = "+"
-        else:
+        #else:
             #start_qry = str(qry_rec_by_spec[pro_spec].interval.start)
-            found = "-"
 
         start_ref = start_ref if start_ref != "-1" else "n/a"
         start_qry = start_qry if start_qry != "-1" else "n/a"
@@ -71,8 +69,7 @@ def compare(ref_records, ref_families, qry_records, qry_families):
         print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t{7}\t\t{8}"
               .format(f_num, pro_spec, found, ref_rec.p_value, ref_rec.e_value,
                       qry_rec.p_value, qry_rec.e_value, start_ref, start_qry))
-        #print(qry_rec.peptide)
-        print(qry_rec.peptide, ref_rec.peptide, pro_spec)
+        #print(qry_rec.peptide, ref_rec.peptide, pro_spec)
 
 
 def main():
