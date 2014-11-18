@@ -13,7 +13,6 @@ from make_proteome import make_proteome
 MSALIGN_DIR = os.environ["MSALIGN_DIR"]
 MSALIGN_CMD = ["java", "-Xmx12G", "-classpath", "jar/*:",
                "edu.ucsd.msalign.align.console.MsAlignPipeline"]
-SLICE_SIZE = 512
 
 def run_instance(proteome_file, spectrum_file, work_dir):
     assert os.path.isdir(work_dir)
@@ -127,12 +126,14 @@ def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
 
 
 def main():
-    if len(sys.argv) != 5:
-        print("Usage: run_parallel.py genome specrum workdir num_proc",
+    if len(sys.argv) != 6:
+        print("Usage: run_parallel.py genome specrum workdir "
+              "num_proc slice_size",
               file=sys.stderr)
         return 1
 
-    run_parallel(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]))
+    run_parallel(sys.argv[1], sys.argv[2], sys.argv[3],
+                 int(sys.argv[4]), int(sys.argv[5]))
     return 0
 
 

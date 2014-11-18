@@ -6,8 +6,11 @@ import re
 from collections import namedtuple, defaultdict
 from itertools import combinations
 
+from Bio.Seq import Seq
+from Bio import SeqIO
 
 E_VALUE = 0.01
+ONLY_BEST = True
 
 class Prsm:
     def __init__(self, prsm_id, spec_id, prot_name, first_res,
@@ -23,7 +26,7 @@ class Prsm:
         self.interval = None
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
-Family = namedtuple("Family", ["prsms", "start", "end"])
+Family = namedtuple("Family", ["id", "prsms", "start", "end"])
 
 def parse_table(filename):
     rows = []
@@ -41,7 +44,7 @@ def parse_table(filename):
     return rows
 
 
-def get_intervals_genome(records):
+def assign_intervals_genome(records):
     CONV_SHIFT = 1
     for rec in records:
         meta = rec.prot_name.split("::")[1]
@@ -61,7 +64,7 @@ def get_intervals_genome(records):
                                 1 if direction == "fwd" else -1)
 
 
-def get_intervals_proteome(records, protein_table):
+def assign_intervals_proteome(records, protein_table):
     prot_table_data = {}
     with open(protein_table, "r") as f:
         for line in f:
@@ -111,14 +114,14 @@ def get_families_proteome(records):
     for rec in records:
         group_spectra[rec.prot_name].append(rec)
 
-    for group in group_spectra.values():
+    for f_id, group in enumerate(group_spectra.values()):
         start = sys.maxint
         end = 0
         prsm_ids = list(map(lambda r: r.prsm_id, group))
         for rec in group:
             start = min(start, by_prsm[rec.prsm_id].interval.start)
             end = max(end, by_prsm[rec.prsm_id].interval.end)
-        families.append(Family(prsm_ids, start, end))
+        families.append(Family(f_id, prsm_ids, start, end))
 
     return families
 
@@ -139,10 +142,10 @@ def get_families_genome(records):
     by_prsm = {r.prsm_id : r for r in records}
 
     families = []
-    for prsms in by_family.values():
+    for f_id, prsms in enumerate(by_family.values()):
         start = min([by_prsm[p].interval.start for p in prsms])
         end = max([by_prsm[p].interval.end for p in prsms])
-        families.append(Family(prsms, start, end))
+        families.append(Family(f_id, prsms, start, end))
 
     return families
 
@@ -151,27 +154,47 @@ def filter_evalue(records, e_value):
     return list(filter(lambda r: r.e_value < e_value, records))
 
 
-def print_table(records, families):
+def print_table(records, families, genome_file, only_best):
+    FLANK_LEN = 5
     rec_by_prsm = {rec.prsm_id : rec for rec in records}
-    for i, family in enumerate(sorted(families, key=lambda f: f.start)):
-        prot_len = int((family.end - family.start) / 3)
-        print("Family {0}\t{1}\t{2}".format(i, family.start, prot_len))
+    genome = get_genome(genome_file)
 
+    print("Fam_id\tSpec_id\tE_value\t\tStart\tEnd\tStrand\tPeptide")
+    for family in sorted(families, key=lambda f: f.start):
         by_eval = sorted(family.prsms, key=lambda p: rec_by_prsm[p].e_value)
+        if only_best:
+            by_eval = [by_eval[0]]
+
         for prsm in by_eval:
             record = rec_by_prsm[prsm]
-            prot_len = int((record.interval.end - record.interval.start) / 3)
-            sign = "+" if record.interval.strand > 0 else "-"
-            print("\t{0}\t{1}\t{2}\t{3:4.2e}\t{4}\t{5}"
-                    .format(record.interval.start, prot_len, sign,
-                            record.e_value, record.spec_id, record.peptide))
+            strand = "+" if record.interval.strand > 0 else "-"
 
-        print("")
+            ##
+            seq_name = record.prot_name.split("::")[0]
+            flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
+            flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
+            #TODO: assert should be here
+            #flank_end -= (flank_end - flank_start + 1) % 3
+            genome_seq = genome[seq_name].seq[flank_start:flank_end+1]
+            if strand == "-":
+                genome_seq = genome_seq.reverse_complement()
+            translated = str(genome_seq.translate())
+            translated = ".".join([translated[0:FLANK_LEN],
+                                   translated[FLANK_LEN:-FLANK_LEN+1],
+                                   translated[-FLANK_LEN+1:]])
+            ##
+
+            print("{0}\t{1}\t{2:4.2e}\t{3}\t{4}\t{5}\t{6}\t{7}"
+                    .format(family.id, record.spec_id, record.e_value,
+                            record.interval.start, record.interval.end,
+                            strand, record.peptide, translated))
+
 
 
 def get_data_genome(table_file, e_value):
     records = parse_table(table_file)
-    get_intervals_genome(records)
+    records = filter_spectras(records)
+    assign_intervals_genome(records)
 
     filtered_records = filter_evalue(records, e_value)
     families = get_families_genome(filtered_records)
@@ -181,16 +204,38 @@ def get_data_genome(table_file, e_value):
 
 def get_data_proteome(results_file, prot_table, e_value):
     records = parse_table(results_file)
-    get_intervals_proteome(records, prot_table)
+    assign_intervals_proteome(records, prot_table)
 
     filtered_records = filter_evalue(records, e_value)
     families = get_families_proteome(filtered_records)
     return records, families
 
 
-#TODO: collapse similar spectras
+def filter_spectras(records):
+    groups = defaultdict(list)
+    for rec in records:
+        groups[rec.spec_id].append(rec)
+
+    to_keep = set()
+    for group in groups.itervalues():
+        by_eval = sorted(group, key=lambda r: r.e_value)
+        to_keep.add(by_eval[0])
+
+    return [r for r in records if r in to_keep]
+
+
+def get_genome(filename):
+    return {r.id : r for r in SeqIO.parse(filename, "fasta")}
+
+
 def main():
-    print_table(*get_data_genome(sys.argv[1], E_VALUE))
+    if len(sys.argv) != 3:
+        print("Usage: find_genes.py results_table genome_file")
+        return 1
+
+    records, families = get_data_genome(sys.argv[1], E_VALUE)
+    print_table(records, families, sys.argv[2], ONLY_BEST)
+    return 0
 
 
 ##################

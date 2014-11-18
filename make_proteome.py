@@ -42,7 +42,7 @@ def slice_prot(filename, slice_size, glob_shift, file_out):
                 genome_pos = 3 * prot_pos + shift
                 prot_name = "{0}::fwd_{1}_{2}".format(record.id, str(frame_shift),
                                                       genome_pos)
-                chunk = Seq(str(chunk).replace("*", "X"))
+                chunk = Seq(str(chunk).replace("*", "G"))
                 SeqIO.write(SeqRecord(seq=chunk, id=prot_name, description=""),
                             file_out, "fasta")
 
