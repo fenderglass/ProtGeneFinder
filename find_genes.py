@@ -54,8 +54,8 @@ def assign_intervals_genome(records):
             genomic_start = int(genome_pos) + (rec.first_res - 1) * 3
             genomic_end = int(genome_pos) + (rec.last_res - 1) * 3
         elif direction == "rev":
-            genomic_start = int(genome_pos) - (rec.last_res - 1) * 3
-            genomic_end = int(genome_pos) - (rec.first_res - 1) * 3
+            genomic_start = int(genome_pos) - (rec.last_res - 1) * 3 + 1    #why +1??
+            genomic_end = int(genome_pos) - (rec.first_res - 1) * 3 + 1     #why +1??
 
         assert genomic_end >= genomic_start
 
@@ -114,14 +114,14 @@ def get_families_proteome(records):
     for rec in records:
         group_spectra[rec.prot_name].append(rec)
 
-    for f_id, group in enumerate(group_spectra.values()):
+    for group in group_spectra.values():
         start = sys.maxint
         end = 0
         prsm_ids = list(map(lambda r: r.prsm_id, group))
         for rec in group:
             start = min(start, by_prsm[rec.prsm_id].interval.start)
             end = max(end, by_prsm[rec.prsm_id].interval.end)
-        families.append(Family(f_id, prsm_ids, start, end))
+        families.append(Family(start, prsm_ids, start, end))
 
     return families
 
@@ -142,10 +142,10 @@ def get_families_genome(records):
     by_prsm = {r.prsm_id : r for r in records}
 
     families = []
-    for f_id, prsms in enumerate(by_family.values()):
+    for prsms in by_family.values():
         start = min([by_prsm[p].interval.start for p in prsms])
         end = max([by_prsm[p].interval.end for p in prsms])
-        families.append(Family(f_id, prsms, start, end))
+        families.append(Family(start, prsms, start, end))
 
     return families
 
@@ -160,7 +160,7 @@ def print_table(records, families, genome_file, only_best):
     genome = get_genome(genome_file)
 
     print("Fam_id\tSpec_id\tE_value\t\tStart\tEnd\tStrand\tPeptide")
-    for family in sorted(families, key=lambda f: f.start):
+    for family in sorted(families, key=lambda f: f.id):
         by_eval = sorted(family.prsms, key=lambda p: rec_by_prsm[p].e_value)
         if only_best:
             by_eval = [by_eval[0]]
@@ -173,9 +173,8 @@ def print_table(records, families, genome_file, only_best):
             seq_name = record.prot_name.split("::")[0]
             flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
             flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
-            #TODO: assert should be here
-            #flank_end -= (flank_end - flank_start + 1) % 3
-            genome_seq = genome[seq_name].seq[flank_start:flank_end+1]
+            genome_seq = genome[seq_name].seq[flank_start:flank_end]
+
             if strand == "-":
                 genome_seq = genome_seq.reverse_complement()
             translated = str(genome_seq.translate())
@@ -184,10 +183,10 @@ def print_table(records, families, genome_file, only_best):
                                    translated[-FLANK_LEN+1:]])
             ##
 
-            print("{0}\t{1}\t{2:4.2e}\t{3}\t{4}\t{5}\t{6}\t{7}"
+            print("{0}\t{1}\t{2:4.2e}\t{3}\t{4}\t{5}\t{6}"
                     .format(family.id, record.spec_id, record.e_value,
                             record.interval.start, record.interval.end,
-                            strand, record.peptide, translated))
+                            strand, translated))
 
 
 

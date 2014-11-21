@@ -36,8 +36,8 @@ def compare(ref_records, ref_families, qry_records, qry_families):
     ######################
 
     print("Fam_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
-          "Qry_eval\tRef_start\tQry_start")
-    for r_fam in ref_families:
+          "Qry_eval\tRef_start\tQry_start\tRef_prot\tQry_prot")
+    for r_fam in sorted(ref_families, key=lambda f: f.id):
         matched_qry_fam = None
         pro_prsms = sorted(r_fam.prsms, key=lambda p: ref_rec_by_prsm[p].e_value)
         pro_specs = [ref_rec_by_prsm[p].spec_id for p in pro_prsms]
@@ -60,12 +60,13 @@ def compare(ref_records, ref_families, qry_records, qry_families):
         start_ref = start_ref if start_ref != "-1" else "n/a"
         start_qry = start_qry if start_qry != "-1" else "n/a"
 
-        print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t{7}\t\t{8}"
+        print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t"
+              "{7}\t\t{8}\t{9}\t{10}"
               .format(r_fam.id, pro_spec, found, ref_rec.p_value,
                       ref_rec.e_value, qry_rec.p_value, qry_rec.e_value,
-                      start_ref, start_qry))
-        print(qry_rec.peptide)
-        #print(qry_rec.peptide, ref_rec.peptide)
+                      start_ref, start_qry, ref_rec.peptide, qry_rec.peptide))
+        #print(ref_rec.peptide)
+        #print(ref_rec.peptide, qry_rec.peptide)
 
 
 def main():
