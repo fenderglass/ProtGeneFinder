@@ -60,28 +60,34 @@ def compare(ref_records, ref_families, qry_records, qry_families):
         start_ref = start_ref if start_ref != "-1" else "n/a"
         start_qry = start_qry if start_qry != "-1" else "n/a"
 
+        ref_protein = ref_rec.genome if ref_rec.genome else ref_rec.peptide
+        qry_protein = qry_rec.genome if qry_rec.genome else qry_rec.peptide
+
         print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t"
-              "{7}\t\t{8}\t{9}\t{10}"
+              "{7}\t\t{8}\n{9}\t{10}"
               .format(r_fam.id, pro_spec, found, ref_rec.p_value,
                       ref_rec.e_value, qry_rec.p_value, qry_rec.e_value,
-                      start_ref, start_qry, ref_rec.peptide, qry_rec.peptide))
-        #print(ref_rec.peptide)
-        #print(ref_rec.peptide, qry_rec.peptide)
+                      start_ref, start_qry, ref_protein, qry_protein))
+        #TODO:
+        if ref_rec.path:
+            print(ref_rec.path)
+        print("")
 
 
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: compare.py genome_results "
+    if len(sys.argv) != 5:
+        print("Usage: compare.py genome_results genome_fasta "
               "proteome_results proteome_table", file=sys.stderr)
         return 1
 
     genome_results = sys.argv[1]
-    proteome_results = sys.argv[2]
-    proteome_table = sys.argv[3]
+    genome_fasta = sys.argv[2]
+    proteome_results = sys.argv[3]
+    proteome_table = sys.argv[4]
 
     pro_rec, pro_fam = get_data_proteome(proteome_results, proteome_table,
                                          E_VALUE)
-    gen_rec, gen_fam = get_data_genome(genome_results, E_VALUE)
+    gen_rec, gen_fam = get_data_genome(genome_results, genome_fasta, E_VALUE)
 
     if PROT_REF:
         compare(pro_rec, pro_fam, gen_rec, gen_fam)

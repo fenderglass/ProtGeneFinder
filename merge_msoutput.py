@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import sys
+import os
 
 def merge_tables(tables):
     header = False
     prsm_id = 0
     for table in tables:
+        d = os.path.dirname(table)
         with open(table, "r") as f:
             for line in f:
                 line = line.strip()
@@ -18,6 +20,10 @@ def merge_tables(tables):
                 vals = line.split("\t")
                 vals[1] = str(prsm_id)
                 prsm_id += 1
+                ###TODO:
+
+                vals.append(d)
+                ###
                 print("\t".join(vals))
 
 

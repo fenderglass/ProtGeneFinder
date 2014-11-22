@@ -24,6 +24,8 @@ class Prsm:
         self.p_value = p_value
         self.e_value = e_value
         self.interval = None
+        self.genome = None
+        self.path = None
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 Family = namedtuple("Family", ["id", "prsms", "start", "end"])
@@ -40,6 +42,9 @@ def parse_table(filename):
             rows.append(Prsm(int(vals[1]), int(vals[2]), vals[9], int(vals[11]),
                              int(vals[12]), vals[13], float(vals[17]),
                              float(vals[18])))
+            #TODO:
+            if len(vals) == 21:
+                rows[-1].path = vals[20]
 
     return rows
 
@@ -103,7 +108,28 @@ def assign_intervals_proteome(records, protein_table):
 
         rec.interval = Interval(start, end, strand)
 
-    #print("Total fails:", fail_counter)
+
+def assign_genome_seqs(records, genome_file):
+    FLANK_LEN = 20
+    genome = get_genome(genome_file)
+
+    for record in records:
+        if record.interval is None:
+            continue
+
+        seq_name = record.prot_name.split("::")[0]
+        flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
+        flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
+        genome_seq = genome[seq_name].seq[flank_start:flank_end]
+
+        if record.interval.strand < 0:
+            genome_seq = genome_seq.reverse_complement()
+
+        translated = str(genome_seq.translate())
+        translated = ".".join([translated[0:FLANK_LEN].lower(),
+                               translated[FLANK_LEN:-FLANK_LEN+1],
+                               translated[-FLANK_LEN+1:].lower()])
+        record.genome = translated
 
 
 def get_families_proteome(records):
@@ -154,10 +180,8 @@ def filter_evalue(records, e_value):
     return list(filter(lambda r: r.e_value < e_value, records))
 
 
-def print_table(records, families, genome_file, only_best):
-    FLANK_LEN = 5
+def print_table(records, families, only_best):
     rec_by_prsm = {rec.prsm_id : rec for rec in records}
-    genome = get_genome(genome_file)
 
     print("Fam_id\tSpec_id\tE_value\t\tStart\tEnd\tStrand\tPeptide")
     for family in sorted(families, key=lambda f: f.id):
@@ -169,33 +193,19 @@ def print_table(records, families, genome_file, only_best):
             record = rec_by_prsm[prsm]
             strand = "+" if record.interval.strand > 0 else "-"
 
-            ##
-            seq_name = record.prot_name.split("::")[0]
-            flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
-            flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
-            genome_seq = genome[seq_name].seq[flank_start:flank_end]
-
-            if strand == "-":
-                genome_seq = genome_seq.reverse_complement()
-            translated = str(genome_seq.translate())
-            translated = ".".join([translated[0:FLANK_LEN],
-                                   translated[FLANK_LEN:-FLANK_LEN+1],
-                                   translated[-FLANK_LEN+1:]])
-            ##
-
             print("{0}\t{1}\t{2:4.2e}\t{3}\t{4}\t{5}\t{6}"
                     .format(family.id, record.spec_id, record.e_value,
                             record.interval.start, record.interval.end,
-                            strand, translated))
+                            strand, record.genome))
 
 
-
-def get_data_genome(table_file, e_value):
+def get_data_genome(table_file, genome_file, e_value):
     records = parse_table(table_file)
     records = filter_spectras(records)
     assign_intervals_genome(records)
 
     filtered_records = filter_evalue(records, e_value)
+    assign_genome_seqs(records, genome_file)
     families = get_families_genome(filtered_records)
 
     return records, families
@@ -232,8 +242,8 @@ def main():
         print("Usage: find_genes.py results_table genome_file")
         return 1
 
-    records, families = get_data_genome(sys.argv[1], E_VALUE)
-    print_table(records, families, sys.argv[2], ONLY_BEST)
+    records, families = get_data_genome(sys.argv[1], sys.argv[2], E_VALUE)
+    print_table(records, families, ONLY_BEST)
     return 0
 
 
