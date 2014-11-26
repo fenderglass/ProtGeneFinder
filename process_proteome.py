@@ -99,7 +99,7 @@ def get_matches(table_file, prot_table, e_value):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Processing MSAlign genome run",
+    parser = argparse.ArgumentParser(description="Processing MSAlign proteome run",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("msalign_output", metavar="msalign_output",
