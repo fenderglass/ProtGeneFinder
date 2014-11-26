@@ -108,10 +108,10 @@ def get_matches(table_file, genome_file, e_value):
 
     matches = []
     for p in prsms:
-        matches.append(GeneMatch(p.prsm_id, p.spec_id, p.interval.start,
+        matches.append(GeneMatch(p.family, p.prsm_id, p.spec_id, p.p_value,
+                                 p.e_value, p.interval.start,
                                  p.interval.end, p.interval.strand,
-                                 p.peptide, p.p_value, p.e_value, p.html,
-                                 p.family, p.genome_seq))
+                                 p.peptide, p.genome_seq, p.html))
 
     return matches
 

@@ -21,9 +21,12 @@ class Prsm:
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 
-GeneMatch = namedtuple("GeneMatch", ["prsm_id", "spec_id", "start", "end",
-                                     "strand", "peptide", "p_value", "e_value",
-                                     "html", "family", "genome_seq"])
+#GeneMatch = namedtuple("GeneMatch", ["prsm_id", "spec_id", "start", "end",
+#                                     "strand", "peptide", "p_value", "e_value",
+#                                     "html", "family", "genome_seq"])
+GeneMatch = namedtuple("GeneMatch", ["family", "prsm_id", "spec_id", "p_value",
+                                     "e_value", "start", "end", "strand",
+                                     "peptide", "genome_seq", "html"])
 
 def parse_msalign_output(filename):
     rows = []
@@ -41,6 +44,27 @@ def parse_msalign_output(filename):
     return rows
 
 
+def read_gene_matches(filename):
+    gene_matches = []
+    with open(filename, "r") as f:
+        for line in f:
+            if line.startswith("Fam_id"):
+                continue
+
+            vals = line.strip().split("\t")
+            strand = 1 if vals[7] == "+" else -1
+            family = int(vals[0]) if vals[0] != "*" else None
+            genome_seq = vals[9] if vals[9] != "*" else None
+            html = vals[10] if vals[10] != "*" else None
+
+            gene_matches.append(GeneMatch(family, int(vals[1]), int(vals[2]),
+                                float(vals[3]), float(vals[4]), int(vals[5]),
+                                int(vals[6]), strand, vals[8], genome_seq,
+                                html))
+
+    return gene_matches
+
+
 def gene_match_serialize(records, stream, family_mode):
     rec_by_fam = defaultdict(list)
     without_fam = []
@@ -50,8 +74,8 @@ def gene_match_serialize(records, stream, family_mode):
         else:
             without_fam.append(r)
 
-    print("Fam_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\tPeptide\t"
-          "\tGenome_seq\tHtml")
+    print("Fam_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
+          "Peptide\tGenome_seq\tHtml")
 
     for family in chain(rec_by_fam.values(), [without_fam]):
         by_eval = sorted(family, key=lambda r: r.e_value)
@@ -66,10 +90,10 @@ def gene_match_serialize(records, stream, family_mode):
             family = str(m.family) if m.family is not None else "*"
             genome_seq = m.genome_seq if m.genome_seq is not None else "*"
 
-            stream.write("{0}\t{1}\t{2:4.2e}\t{3:4.2e}\t{4}\t{5}\t{6}\t{7}"
-                         "\t{8}\t{9}\n"
-                         .format(family, m.spec_id, m.p_value, m.e_value,
-                                 m.start, m.end, strand, m.peptide,
+            stream.write("{0}\t{1}\t{2}\t{3:4.2e}\t{4:4.2e}\t{5}\t{6}\t{7}\t{8}"
+                         "\t{9}\t{10}\n"
+                         .format(family, m.prsm_id, m.spec_id, m.p_value,
+                                 m.e_value, m.start, m.end, strand, m.peptide,
                                  genome_seq, m.html))
 
 
