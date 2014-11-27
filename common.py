@@ -21,9 +21,6 @@ class Prsm:
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 
-#GeneMatch = namedtuple("GeneMatch", ["prsm_id", "spec_id", "start", "end",
-#                                     "strand", "peptide", "p_value", "e_value",
-#                                     "html", "family", "genome_seq"])
 GeneMatch = namedtuple("GeneMatch", ["family", "prsm_id", "spec_id", "p_value",
                                      "e_value", "start", "end", "strand",
                                      "peptide", "genome_seq", "html"])
@@ -129,5 +126,3 @@ def Find(x):
        x.parent = Find(x.parent)
        return x.parent
 ##################
-
-
