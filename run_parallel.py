@@ -95,6 +95,7 @@ def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
     os.chdir(MSALIGN_DIR)
 
     for window in WINDOWS:
+        print("Running with window size", window)
         window_dir = os.path.join(work_dir, "genome_run_" + str(window))
         if not os.path.isdir(window_dir):
             os.mkdir(window_dir)
