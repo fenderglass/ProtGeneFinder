@@ -169,16 +169,6 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
 
 
 def main():
-    """
-    if len(sys.argv) != 5:
-        print("Usage: run_parallel.py genome specrum workdir "
-              "num_proc",
-              file=sys.stderr)
-        return 1
-
-    run_parallel_proteome(sys.argv[1], sys.argv[2], sys.argv[3],
-                          int(sys.argv[4]))
-    """
     parser = argparse.ArgumentParser(description="Run MSAlign on genome/proteome")
     subparsers = parser.add_subparsers(help="sub-command help", dest="mode")
 
