@@ -7,6 +7,7 @@ import sys
 import subprocess
 from threading import Thread
 from time import sleep
+import argparse
 
 from make_proteome import make_proteome
 
@@ -85,7 +86,40 @@ def split_n(lst, n):
     return out_lst
 
 
-def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
+def run_parallel_proteome(input_proteome, input_spectrum, work_dir, num_proc):
+    if not os.path.isdir(work_dir):
+        os.mkdir(work_dir)
+    work_dir = os.path.abspath(work_dir)
+
+    input_spectrum = os.path.abspath(input_spectrum)
+    input_proteome = os.path.abspath(input_proteome)
+    os.chdir(MSALIGN_DIR)
+
+    spectras_text = read_spectrum_file(input_spectrum)
+    spec_splitted = split_n(spectras_text, num_proc)
+    threads = []
+
+    for i in range(num_proc):
+        inst_name = "part_{0}".format( i)
+        inst_workdir = os.path.join(work_dir, inst_name)
+        if os.path.isdir(inst_workdir):
+            shutil.rmtree(inst_workdir)
+        os.mkdir(inst_workdir)
+
+        inst_spec = os.path.join(inst_workdir, "spectra.msalign")
+        write_spectras(spec_splitted[i], inst_spec)
+
+        print("Running {0} instance".format(inst_name))
+        thread = Thread(target=run_instance,
+                        args=(input_proteome, inst_spec, inst_workdir))
+        thread.start()
+        threads.append(thread)
+
+    for t in threads:
+        t.join()
+
+
+def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
     if not os.path.isdir(work_dir):
         os.mkdir(work_dir)
     work_dir = os.path.abspath(work_dir)
@@ -135,14 +169,40 @@ def run_parallel(input_genome, input_spectrum, work_dir, num_proc):
 
 
 def main():
+    """
     if len(sys.argv) != 5:
         print("Usage: run_parallel.py genome specrum workdir "
               "num_proc",
               file=sys.stderr)
         return 1
 
-    run_parallel(sys.argv[1], sys.argv[2], sys.argv[3],
-                 int(sys.argv[4]))
+    run_parallel_proteome(sys.argv[1], sys.argv[2], sys.argv[3],
+                          int(sys.argv[4]))
+    """
+    parser = argparse.ArgumentParser(description="Run MSAlign on genome/proteome")
+    subparsers = parser.add_subparsers(help="sub-command help", dest="mode")
+
+    parser_proteome = subparsers.add_parser("proteome", help="proteome mode")
+    parser_proteome.add_argument("prot_file", help="path to proteome file")
+    parser_proteome.add_argument("spectrum_file", help="path to spectrum file")
+    parser_proteome.add_argument("output_dir", help="output directory")
+    parser_proteome.add_argument("num_proc", help="number of threads")
+
+    parser_genome = subparsers.add_parser("genome", help="genome mode")
+    parser_genome.add_argument("genome_file", help="path to genome file")
+    parser_genome.add_argument("spectrum_file", help="path to spectrum file")
+    parser_genome.add_argument("output_dir", help="output directory")
+    parser_genome.add_argument("num_proc", help="number of threads")
+
+    args = parser.parse_args(sys.argv[1:])
+
+    if args.mode == "genome":
+        run_parallel_genome(args.genome_file, args.spectrum_file,
+                            args.output_dir, int(args.num_proc))
+    else:
+        run_parallel_proteome(args.prot_file, args.spectrum_file,
+                              args.output_dir, int(args.num_proc))
+
     return 0
 
 
