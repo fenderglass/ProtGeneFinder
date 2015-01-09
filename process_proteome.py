@@ -15,22 +15,14 @@ def assign_intervals(records, protein_table):
     prot_table_data = {}
     with open(protein_table, "r") as f:
         for line in f:
-            if line.startswith("#"):
-                continue
-            vals = line.strip().split("\t")
-            start, end = int(vals[2]), int(vals[3])
-            strand = 1 if vals[4] == "+" else -1
-            if vals[6] != "-":
-                prot_id = vals[6]
-            else:
-                prot_id = vals[7].split(".")[0] #mwahaha
-
-            prot_table_data[prot_id] = (start, end, strand)
+            tokens = line.strip().split()
+            start, end = int(tokens[1]), int(tokens[2])
+            strand = 1 if tokens[3] == "+" else -1
+            prot_table_data[tokens[0]] = (start, end, strand)
 
     fail_counter = 0
-    gen_id_re = re.compile(".*(^|\s)GN=(\S*)($|\s).*")
     for rec in records:
-        prot_id = gen_id_re.match(rec.prot_name).group(2)
+        prot_id = rec.prot_name.split(" ")[0].split("|")[1]
         if prot_id not in prot_table_data:
             rec.interval = Interval(-1, -1, 1)
             fail_counter += 1

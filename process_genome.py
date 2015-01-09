@@ -63,8 +63,10 @@ def assign_families(records):
         int_1 = rec_1.interval
         int_2 = rec_2.interval
         #test for overlapping
-        if ((int_1.start <= int_2.start and int_2.end <= int_1.end) or
-            (int_2.start <= int_1.start and int_1.end <= int_2.end)):
+        #if ((int_1.start <= int_2.start and int_2.end <= int_1.end) or
+        #    (int_2.start <= int_1.start and int_1.end <= int_2.end)):
+        if ((int_1.start <= int_2.start <= int_1.end) or
+            (int_2.start <= int_1.start <= int_2.end)):
             Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
 
     by_family = defaultdict(list)

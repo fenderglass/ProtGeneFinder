@@ -42,7 +42,8 @@ def calc_statistics(gene_matches):
 
 
 def process_group(gene_matches):
-    START_CODONS = ["M", "V", "L"]
+    #START_CODONS = ["M", "V", "L"]
+    START_CODONS = ["M"]
     num_matched = len(gene_matches)
     num_start_codon_right = 0
     num_start_codon_left = 0
