@@ -62,8 +62,9 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
         if not matched_qry_fam:
             cand_qry = qry_rec_by_spec[ref_spec]
             cand_ref = ref_rec_by_spec[ref_spec]
-            if (cand_qry.start == -1 or cand_ref.start == -1 and
-                                     cand_qry.family is not None):
+            #if (cand_qry.start == -1 or cand_ref.start == -1 and
+            #                         cand_qry.family is not None):
+            if cand_qry.family is not None:
                 matched_qry_fam = cand_qry.family
 
         if matched_qry_fam is not None and only_missmatched:
@@ -167,7 +168,7 @@ def compare_by_spectrum(ref_records, qry_records, only_missmatched, blast):
 
 
 def check_blast(query):
-    MAX_EVAL = 0.001
+    MAX_EVAL = 0.01
 
     proc = subprocess.Popen(["blastp", "-db", "nr", "-remote", "-outfmt",
                              "6 sseqid evalue", "-max_target_seqs", "1"],
@@ -198,8 +199,8 @@ def main():
 
     ref_gene_match = read_gene_matches(args.ref_table)
     qry_gene_match = read_gene_matches(args.qry_table)
-    compare_by_spectrum(ref_gene_match, qry_gene_match, args.missmatch, args.blast)
-    #compare_by_positions(ref_gene_match, qry_gene_match, args.missmatch, args.blast)
+    #compare_by_spectrum(ref_gene_match, qry_gene_match, args.missmatch, args.blast)
+    compare_by_positions(ref_gene_match, qry_gene_match, args.missmatch, args.blast)
 
 
 if __name__ == "__main__":

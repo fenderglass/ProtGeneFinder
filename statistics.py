@@ -80,12 +80,17 @@ def process_group(gene_matches):
                 stop_orf += 1
             num_orf += 1
 
-        if not (start_ok or stop_ok):
-            if "*" in peptide[right + 1:].upper():
-                for st in START_CODONS:
-                    if st in peptide[:left+1].upper():
-                        num_suspicious += 1
-                        break
+        if not start_ok or not stop_ok:
+            start_sites = [i for i, l in enumerate(peptide) if l in START_CODONS]
+            stop_sites = [i for i, l in enumerate(peptide) if l == "*"]
+            if start_sites and stop_sites and min(start_sites) < max(stop_sites):
+                num_suspicious += 1
+        #if not (start_ok or stop_ok):
+        #    if "*" in peptide[right + 1:].upper():
+        #        for st in START_CODONS:
+        #            if st in peptide[:left+1].upper():
+        #                num_suspicious += 1
+        #                break
 
         if (left > 0 and peptide[left - 1].upper() == "A" and
             peptide[left + 1].upper() == "A"):
@@ -106,8 +111,9 @@ def process_group(gene_matches):
     print("ORF (begins/preceds with start codon AND ends "
           "with stop):\t{0} ({1:4.2f}%)"
           .format(num_orf, 100 * float(num_orf) / num_matched))
-    print("extended ORF (start/stop codons "
-          "beyond PrSM in <= 20 aa):\t{0} ({1:4.2f}%)"
+    #print("extended ORF (start/stop codons "
+    #      "beyond PrSM in <= 20 aa):\t{0} ({1:4.2f}%)"
+    print("ORF inside PrSM:\t{0} ({1:4.2f}%)"
           .format(num_suspicious, 100 * float(num_suspicious) / num_matched))
     print("")
     print("Stop codon inside protein:\t{0} ({1:4.2f}%)"
