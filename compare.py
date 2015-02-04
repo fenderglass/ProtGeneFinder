@@ -9,46 +9,50 @@ import subprocess
 
 
 def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
+    #various indexes
     ref_by_fam = defaultdict(list)
-    ref_family_pos = defaultdict(lambda: (sys.maxint, -sys.maxint))
     for r in ref_records:
-        if r.family is not None:
+        if r.family is not None and (-1 not in [r.start, r.end]):
             ref_by_fam[r.family].append(r)
-            new_start = min(ref_family_pos[r.family][0], r.start)
-            new_end = max(ref_family_pos[r.family][1], r.end)
-            if new_start == -1:
-                new_end = -1
-            ref_family_pos[r.family] = (new_start, new_end)
+
+    ref_family_pos = {}
+    for fam, records in ref_by_fam.items():
+        starts = map(lambda r: r.start, records)
+        ends = map(lambda r: r.end, records)
+        ref_family_pos[fam] = (min(starts), max(ends))
 
     qry_by_fam = defaultdict(list)
-    qry_family_pos = defaultdict(lambda: (sys.maxint, -sys.maxint))
     for r in qry_records:
-        if r.family is not None:
+        if r.family is not None and (-1 not in [r.start, r.end]):
             qry_by_fam[r.family].append(r)
-            new_start = min(qry_family_pos[r.family][0], r.start)
-            new_end = max(qry_family_pos[r.family][1], r.end)
-            if new_start == -1:
-                new_end = -1
-            qry_family_pos[r.family] = (new_start, new_end)
 
-    ref_rec_by_prsm = {r.prsm_id : r for r in ref_records}
+    qry_family_pos = {}
+    for fam, records in qry_by_fam.items():
+        starts = map(lambda r: r.start, records)
+        ends = map(lambda r: r.end, records)
+        qry_family_pos[fam] = (min(starts), max(ends))
+
     ref_rec_by_spec = {r.spec_id : r for r in ref_records}
-
-    qry_rec_by_prsm = {r.prsm_id : r for r in qry_records}
     qry_rec_by_spec = {r.spec_id : r for r in qry_records}
 
     print("Fam_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
           "Qry_eval\tRef_start\tQry_start\tRef_prot\tQry_prot")
+
+    #matched_families = set()
     for r_fam_id, r_fam in ref_by_fam.items():
         #Matching query family based on overlap
-        matched_qry_fam = None
+        matches = []
         for q_fam_id in qry_by_fam:
+            #if q_fam_id in matched_families: continue
             q_pos = qry_family_pos[q_fam_id]
             r_pos = ref_family_pos[r_fam_id]
-            if ((q_pos[0] <= r_pos[0] <= q_pos[1]) or
-                (r_pos[0] <= q_pos[0] <= r_pos[1])):
-                    matched_qry_fam = q_fam_id
-                    break
+            overlap = max(0, min(q_pos[1], r_pos[1]) - max(q_pos[0], r_pos[0]))
+            if overlap > 0:
+                matches.append((q_fam_id, overlap))
+
+        matched_qry_fam = (sorted(matches, key=lambda t: t[1])[-1][0]
+                           if matches else None)
+        #matched_families.add(matched_qry_fam)
 
         #now choose best families' spectrum
         ref_spec = min(ref_by_fam[r_fam_id], key=lambda r: r.e_value).spec_id
@@ -57,15 +61,6 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
                            key=lambda r: r.e_value).spec_id
         else:
             qry_spec = ref_spec
-
-        #maybe something's wrgong with coodinates?
-        if not matched_qry_fam:
-            cand_qry = qry_rec_by_spec[ref_spec]
-            cand_ref = ref_rec_by_spec[ref_spec]
-            #if (cand_qry.start == -1 or cand_ref.start == -1 and
-            #                         cand_qry.family is not None):
-            if cand_qry.family is not None:
-                matched_qry_fam = cand_qry.family
 
         if matched_qry_fam is not None and only_missmatched:
             continue
@@ -178,6 +173,14 @@ def check_blast(query):
     if not stdout or float(stdout.split("\n")[0].split("\t")[1]) > MAX_EVAL:
         return False
     return True
+
+
+def _median(values):
+    """
+    Not a true median, but we keep real distances
+    """
+    sorted_values = sorted(values)
+    return sorted_values[(len(values) - 1) / 2]
 
 
 def main():

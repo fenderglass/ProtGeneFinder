@@ -34,9 +34,9 @@ def calc_statistics(gene_matches):
         by_family[gm.family].append(gm)
     longest_in_fam = []
     for fam in by_family.values():
-        longest_in_fam.append(sorted(fam, key=lambda g: g.end - g.start)[-1])
+        longest_in_fam.append(sorted(fam, key=lambda g: g.e_value)[0])
 
-    print("\n\nBy family (for longest protein)\n--------------------------")
+    print("\n\nBy family (for best match)\n--------------------------")
     print("Total:\t{0}".format(len(longest_in_fam)))
     process_group(longest_in_fam)
 
