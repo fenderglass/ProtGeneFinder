@@ -3,7 +3,7 @@
 import sys
 import os
 
-def merge_tables(tables):
+def merge_tables(tables, out_stream):
     header = False
     prsm_id = 0
     for table in tables:
@@ -13,7 +13,7 @@ def merge_tables(tables):
                 line = line.strip()
                 if line.startswith("Data"):
                     if not header:
-                        print(line)
+                        out_stream.write(line + "\n")
                         header = True
                     continue
 
@@ -24,11 +24,11 @@ def merge_tables(tables):
 
                 vals.append(d)
                 ###
-                print("\t".join(vals))
+                out_stream.write("\t".join(vals) + "\n")
 
 
 def main():
-    merge_tables(sys.argv[1:])
+    merge_tables(sys.argv[1:], sys.stdout)
 
 
 if __name__ == "__main__":

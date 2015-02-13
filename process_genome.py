@@ -17,7 +17,7 @@ from common import (Prsm, GeneMatch, Interval, parse_msalign_output,
 def assign_intervals(records):
     CONV_SHIFT = 1
     for rec in records:
-        meta = rec.prot_name.split("::")[1]
+        meta = rec.prot_name.split(" ")[0].split("::")[1]
         direction, shift_len, genome_pos = meta.split("_")
 
         if direction == "fwd":
@@ -118,6 +118,12 @@ def get_matches(table_file, genome_file, e_value):
     return matches
 
 
+def process_genome(alignment_table, fasta_file, evalue, out_stream):
+    gene_match = get_matches(alignment_table, fasta_file,
+                             evalue)
+    gene_match_serialize(gene_match, out_stream, False)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Processing MSAlign genome run",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -126,18 +132,17 @@ def main():
                         help="path to result_table.txt")
     parser.add_argument("genome_fasta", metavar="genome_fasta",
                         help="path to genome file in FASTA format")
-    parser.add_argument("-f", "--family", action="store_const",
-                        dest="family", default=False, const=True,
-                        help="group by families")
+    #parser.add_argument("-f", "--family", action="store_const",
+    #                    dest="family", default=False, const=True,
+    #                    help="group by families")
     parser.add_argument("-e", "--eval", dest="e_value",
                         help="custom e-value threshold",
                         default="0.01")
 
     args = parser.parse_args()
 
-    gene_match = get_matches(args.msalign_output, args.genome_fasta,
-                             float(args.e_value))
-    gene_match_serialize(gene_match, sys.stdout, args.family)
+    process_genome(args.msalign_output, args.genome_fasta,
+                   float(args.e_value), sys.stdout)
     return 0
 
 

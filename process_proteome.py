@@ -90,6 +90,11 @@ def get_matches(table_file, prot_table, e_value):
     return matches
 
 
+def process_proteome(alignment_table, protein_table, e_value, out_stream):
+    gene_match = get_matches(alignment_table, protein_table, e_value)
+    gene_match_serialize(gene_match, out_stream, False)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Processing MSAlign proteome run",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -98,18 +103,16 @@ def main():
                         help="path to result_table.txt")
     parser.add_argument("prot_table", metavar="prot_table",
                         help="path to protein table")
-    parser.add_argument("-f", "--family", action="store_const",
-                        dest="family", default=False, const=True,
-                        help="group by families")
-    parser.add_argument("-e", "--eval", dest="e_value",
+    #parser.add_argument("-f", "--family", action="store_const",
+    #                    dest="family", default=False, const=True,
+    #                    help="group by families")
+    parser.add_argument("-e", "--eval", dest="e_value", type=float,
                         help="custom e-value threshold",
                         default="0.01")
 
     args = parser.parse_args()
-
-    gene_match = get_matches(args.msalign_output, args.prot_table,
-                             float(args.e_value))
-    gene_match_serialize(gene_match, sys.stdout, args.family)
+    process_proteome(args.msalign_output, args.prot_table,
+                     args.evalue, sys.stdout)
     return 0
 
 

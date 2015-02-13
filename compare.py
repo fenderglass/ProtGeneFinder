@@ -66,19 +66,20 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
             continue
 
         ref_rec = ref_rec_by_spec[ref_spec]
-        qry_rec = qry_rec_by_spec[qry_spec]
+        qry_rec = qry_rec_by_spec.get(qry_spec, None)
 
-        start_ref = str(ref_rec_by_spec[ref_spec].start)
-        start_qry = str(qry_rec_by_spec[qry_spec].start)
-        found = "+" if matched_qry_fam is not None else "-"
-
-        start_ref = start_ref if start_ref != "-1" else "n/a"
-        start_qry = start_qry if start_qry != "-1" else "n/a"
-
+        ref_start = str(ref_rec.start)
         ref_protein = (ref_rec.genome_seq if ref_rec.genome_seq else
                        ref_rec.peptide)
-        qry_protein = (qry_rec.genome_seq if qry_rec.genome_seq else
-                       qry_rec.peptide)
+
+        if qry_rec:
+            qry_start = str(qry_rec.start)
+            qry_protein = (qry_rec.genome_seq if qry_rec.genome_seq else
+                           qry_rec.peptide)
+            qry_pval = "%6.2e" % qry_rec.p_value
+            qry_eval = "%6.2e" % qry_rec.e_value
+        else:
+            qry_start, qry_protein, qry_pval, qry_eval = "n/a", "n/a", "n/a", "n/a"
 
         if blast:
             left = ref_protein.find(".")
@@ -87,11 +88,12 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
             if only_missmatched and not check_blast(inner_prot):
                 continue
 
-        print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5:6.2e}\t{6:6.2e}\t"
+        found = "+" if matched_qry_fam is not None else "-"
+        print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5}\t{6}\t"
               "{7}\t\t{8}\n{9}\t{10}"
               .format(r_fam_id, ref_spec, found, ref_rec.p_value,
-                      ref_rec.e_value, qry_rec.p_value, qry_rec.e_value,
-                      start_ref, start_qry, ref_protein, qry_protein))
+                      ref_rec.e_value, qry_pval, qry_eval,
+                      ref_start, qry_start, ref_protein, qry_protein))
 
         print(ref_rec.html)
         print("")
@@ -188,7 +190,7 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("ref_table", metavar="ref_table",
-                        help="path to reference table in gm fromat")
+                        help="path to reference table in gm format")
     parser.add_argument("qry_table", metavar="qry_table",
                         help="path to querry table in gm format")
     parser.add_argument("-m", "--missmatch", action="store_const",

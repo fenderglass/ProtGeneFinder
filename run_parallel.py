@@ -10,13 +10,16 @@ from time import sleep
 import argparse
 
 from make_proteome import make_proteome
+from merge_msoutput import merge_tables
+from process_genome import process_genome
+from process_proteome import process_proteome
 
 TOPPIC_BIN = "toppic"
-
 WINDOWS = [500, 230, 110, 60]
 
 def run_instance(proteome_file, spectrum_file, work_dir):
-    cmdline = [TOPPIC_BIN, proteome_file, spectrum_file, "--max-ptm", "500"]
+    cmdline = [TOPPIC_BIN, proteome_file, spectrum_file, "--max-ptm", "500",
+               "--generating-function", "--cutoff-value", "100"]
     subprocess.check_call(cmdline, stdout=open(os.devnull, "w"))
 
 
@@ -79,6 +82,7 @@ def run_parallel_proteome(input_proteome, input_spectrum, work_dir, num_proc):
     spectras_text = read_spectrum_file(input_spectrum)
     spec_splitted = split_n(spectras_text, num_proc)
     threads = []
+    output_files = []
 
     for i in range(num_proc):
         inst_name = "part_{0}".format( i)
@@ -95,12 +99,17 @@ def run_parallel_proteome(input_proteome, input_spectrum, work_dir, num_proc):
 
         print("Running {0} instance".format(inst_name))
         thread = Thread(target=run_instance,
-                        args=(input_proteome, inst_spec, inst_workdir))
+                        args=(inst_prot, inst_spec, inst_workdir))
         thread.start()
         threads.append(thread)
 
+        out_file = os.path.join(inst_workdir, "spectra.OUTPUT_TABLE")
+        output_files.append(out_file)
+
     for t in threads:
         t.join()
+
+    return output_files
 
 
 def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
@@ -110,6 +119,7 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
 
     input_spectrum = os.path.abspath(input_spectrum)
     input_genome = os.path.abspath(input_genome)
+    output_files = []
 
     for window in WINDOWS:
         print("Running with window size", window)
@@ -147,38 +157,56 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
                 thread.start()
                 threads.append(thread)
 
+                out_file = os.path.join(inst_workdir, "spectra.OUTPUT_TABLE")
+                output_files.append(out_file)
+
         run_for_half("noshift", prot_file_1)
         run_for_half("halfshift", prot_file_2)
 
         for t in threads:
             t.join()
 
+    return output_files
+
 
 def main():
+    EVALUE = 0.01
     parser = argparse.ArgumentParser(description="Run MSAlign on genome/proteome")
     subparsers = parser.add_subparsers(help="sub-command help", dest="mode")
 
     parser_proteome = subparsers.add_parser("proteome", help="proteome mode")
     parser_proteome.add_argument("prot_file", help="path to proteome file")
+    parser_proteome.add_argument("prot_coords", help="a file with protein "
+                                                     "coordinates")
     parser_proteome.add_argument("spectrum_file", help="path to spectrum file")
     parser_proteome.add_argument("output_dir", help="output directory")
-    parser_proteome.add_argument("num_proc", help="number of threads")
+    parser_proteome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
+                                 help="number of processes", default="1")
 
     parser_genome = subparsers.add_parser("genome", help="genome mode")
     parser_genome.add_argument("genome_file", help="path to genome file")
     parser_genome.add_argument("spectrum_file", help="path to spectrum file")
     parser_genome.add_argument("output_dir", help="output directory")
-    parser_genome.add_argument("num_proc", help="number of threads")
+    parser_genome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
+                               help="number of processes", default="2")
 
     args = parser.parse_args(sys.argv[1:])
 
+    merged_output = os.path.join(args.output_dir, "toppic_merged.txt")
     if args.mode == "genome":
-        run_parallel_genome(args.genome_file, args.spectrum_file,
-                            args.output_dir, int(args.num_proc))
+        out_files = run_parallel_genome(args.genome_file, args.spectrum_file,
+                                        args.output_dir, args.num_proc)
+        merge_tables(out_files, open(merged_output, "w"))
+        processed_output = os.path.join(args.output_dir, "genome.gm")
+        process_genome(merged_output, args.genome_file,
+                       EVALUE, open(processed_output, "w"))
     else:
-        run_parallel_proteome(args.prot_file, args.spectrum_file,
-                              args.output_dir, int(args.num_proc))
-
+        out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
+                                          args.output_dir, args.num_proc)
+        merge_tables(out_files, open(merged_output, "w"))
+        processed_output = os.path.join(args.output_dir, "proteome.gm")
+        process_proteome(merged_output, args.prot_coords,
+                         EVALUE, open(processed_output, "w"))
     return 0
 
 

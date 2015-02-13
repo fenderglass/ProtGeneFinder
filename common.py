@@ -34,9 +34,9 @@ def parse_msalign_output(filename):
                 continue
 
             vals = line.split("\t")
-            rows.append(Prsm(int(vals[1]), int(vals[2]), vals[9], int(vals[11]),
-                             int(vals[12]), vals[13], float(vals[17]),
-                             float(vals[18]), vals[20]))
+            rows.append(Prsm(int(vals[1]), int(vals[2]), vals[11], int(vals[13]),
+                             int(vals[14]), vals[15], float(vals[19]),
+                             float(vals[20]), vals[23]))
 
     return rows
 
@@ -71,8 +71,8 @@ def gene_match_serialize(records, stream, family_mode):
         else:
             without_fam.append(r)
 
-    print("Fam_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
-          "Peptide\tGenome_seq\tHtml")
+    stream.write("Fam_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
+                 "Peptide\tGenome_seq\tHtml\n")
 
     for family in chain(rec_by_fam.values(), [without_fam]):
         by_eval = sorted(family, key=lambda r: r.e_value)
