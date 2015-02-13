@@ -95,7 +95,6 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
                       ref_rec.e_value, qry_pval, qry_eval,
                       ref_start, qry_start, ref_protein, qry_protein))
 
-        print(ref_rec.html)
         print("")
 
 
@@ -160,7 +159,6 @@ def compare_by_spectrum(ref_records, qry_records, only_missmatched, blast):
                       ref_rec.e_value, qry_rec.p_value, qry_rec.e_value,
                       start_ref, start_qry, ref_protein, qry_protein))
 
-        print(ref_rec.html)
         print("")
 
 

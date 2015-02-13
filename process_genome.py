@@ -5,7 +5,8 @@ import sys
 import re
 from collections import defaultdict
 from itertools import combinations
-import argparse
+import shutil
+import os
 
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -21,11 +22,11 @@ def assign_intervals(records):
         direction, shift_len, genome_pos = meta.split("_")
 
         if direction == "fwd":
-            genomic_start = int(genome_pos) + (rec.first_res - 1) * 3
-            genomic_end = int(genome_pos) + (rec.last_res - 1) * 3
+            genomic_start = int(genome_pos) + rec.first_res * 3
+            genomic_end = int(genome_pos) + rec.last_res * 3
         elif direction == "rev":
-            genomic_start = int(genome_pos) - (rec.last_res - 1) * 3 + 1    #why +1??
-            genomic_end = int(genome_pos) - (rec.first_res - 1) * 3 + 1     #why +1??
+            genomic_start = int(genome_pos) - rec.last_res * 3 + 1    #why +1??
+            genomic_end = int(genome_pos) - rec.first_res * 3 + 1     #why +1??
 
         assert genomic_end >= genomic_start
 
@@ -99,10 +100,17 @@ def get_fasta(filename):
     return {r.id : r for r in SeqIO.parse(filename, "fasta")}
 
 
+def copy_html(prsms, out_dir):
+    for prsm in prsms:
+        html_name = os.path.join(out_dir, "spec{0}.html".format(prsm.spec_id))
+        shutil.copy2(prsm.html, html_name)
+
+
 def get_matches(table_file, genome_file, e_value):
     prsms = parse_msalign_output(table_file)
     prsms = filter_spectras(prsms)
     trusted_prsms = filter_evalue(prsms, e_value)
+
 
     assign_intervals(prsms)
     assign_genome_seqs(prsms, genome_file)
@@ -113,38 +121,20 @@ def get_matches(table_file, genome_file, e_value):
         matches.append(GeneMatch(p.family, p.prsm_id, p.spec_id, p.p_value,
                                  p.e_value, p.interval.start,
                                  p.interval.end, p.interval.strand,
-                                 p.peptide, p.genome_seq, p.html))
+                                 p.peptide, p.genome_seq))
 
-    return matches
-
-
-def process_genome(alignment_table, fasta_file, evalue, out_stream):
-    gene_match = get_matches(alignment_table, fasta_file,
-                             evalue)
-    gene_match_serialize(gene_match, out_stream, False)
+    return prsms, matches
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Processing MSAlign genome run",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+def process_genome(alignment_table, fasta_file, evalue, out_dir):
+    prsms, gene_match = get_matches(alignment_table, fasta_file,
+                                    evalue)
 
-    parser.add_argument("msalign_output", metavar="msalign_output",
-                        help="path to result_table.txt")
-    parser.add_argument("genome_fasta", metavar="genome_fasta",
-                        help="path to genome file in FASTA format")
-    #parser.add_argument("-f", "--family", action="store_const",
-    #                    dest="family", default=False, const=True,
-    #                    help="group by families")
-    parser.add_argument("-e", "--eval", dest="e_value",
-                        help="custom e-value threshold",
-                        default="0.01")
+    html_dir = os.path.join(out_dir, "prsm_html")
+    if os.path.isdir(html_dir):
+        shutil.rmtree(html_dir)
+    os.mkdir(html_dir)
+    copy_html(prsms, html_dir)
 
-    args = parser.parse_args()
-
-    process_genome(args.msalign_output, args.genome_fasta,
-                   float(args.e_value), sys.stdout)
-    return 0
-
-
-if __name__ == "__main__":
-    main()
+    out_file = os.path.join(out_dir, "genome.gm")
+    gene_match_serialize(gene_match, open(out_file, "w"), False)

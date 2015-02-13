@@ -10,7 +10,7 @@ from time import sleep
 import argparse
 
 from make_proteome import make_proteome
-from merge_msoutput import merge_tables
+from merge_tables import merge_tables
 from process_genome import process_genome
 from process_proteome import process_proteome
 
@@ -197,16 +197,14 @@ def main():
         out_files = run_parallel_genome(args.genome_file, args.spectrum_file,
                                         args.output_dir, args.num_proc)
         merge_tables(out_files, open(merged_output, "w"))
-        processed_output = os.path.join(args.output_dir, "genome.gm")
         process_genome(merged_output, args.genome_file,
-                       EVALUE, open(processed_output, "w"))
+                       EVALUE, args.output_dir)
     else:
         out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
                                           args.output_dir, args.num_proc)
         merge_tables(out_files, open(merged_output, "w"))
-        processed_output = os.path.join(args.output_dir, "proteome.gm")
         process_proteome(merged_output, args.prot_coords,
-                         EVALUE, open(processed_output, "w"))
+                         EVALUE, args.output_dir)
     return 0
 
 

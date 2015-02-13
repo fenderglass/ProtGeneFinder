@@ -23,7 +23,7 @@ Interval = namedtuple("Interval", ["start", "end", "strand"])
 
 GeneMatch = namedtuple("GeneMatch", ["family", "prsm_id", "spec_id", "p_value",
                                      "e_value", "start", "end", "strand",
-                                     "peptide", "genome_seq", "html"])
+                                     "peptide", "genome_seq"])
 
 def parse_msalign_output(filename):
     rows = []
@@ -52,12 +52,10 @@ def read_gene_matches(filename):
             strand = 1 if vals[7] == "+" else -1
             family = int(vals[0]) if vals[0] != "*" else None
             genome_seq = vals[9] if vals[9] != "*" else None
-            html = vals[10] if vals[10] != "*" else None
 
             gene_matches.append(GeneMatch(family, int(vals[1]), int(vals[2]),
                                 float(vals[3]), float(vals[4]), int(vals[5]),
-                                int(vals[6]), strand, vals[8], genome_seq,
-                                html))
+                                int(vals[6]), strand, vals[8], genome_seq))
 
     return gene_matches
 
@@ -72,7 +70,7 @@ def gene_match_serialize(records, stream, family_mode):
             without_fam.append(r)
 
     stream.write("Fam_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
-                 "Peptide\tGenome_seq\tHtml\n")
+                 "Peptide\tGenome_seq\n")
 
     for family in chain(rec_by_fam.values(), [without_fam]):
         by_eval = sorted(family, key=lambda r: r.e_value)
@@ -88,10 +86,10 @@ def gene_match_serialize(records, stream, family_mode):
             genome_seq = m.genome_seq if m.genome_seq is not None else "*"
 
             stream.write("{0}\t{1}\t{2}\t{3:4.2e}\t{4:4.2e}\t{5}\t{6}\t{7}\t{8}"
-                         "\t{9}\t{10}\n"
+                         "\t{9}\n"
                          .format(family, m.prsm_id, m.spec_id, m.p_value,
                                  m.e_value, m.start, m.end, strand, m.peptide,
-                                 genome_seq, m.html))
+                                 genome_seq))
 
 
 ##################

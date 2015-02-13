@@ -5,7 +5,8 @@ import sys
 import re
 from collections import namedtuple, defaultdict
 from itertools import combinations
-import argparse
+import os
+import shutil
 
 from common import (Prsm, GeneMatch, Interval, parse_msalign_output,
                     gene_match_serialize)
@@ -34,11 +35,11 @@ def assign_intervals(records, protein_table):
         strand = prot_rec[2]
 
         if prot_rec[2] > 0:
-            start = prot_rec[0] + (rec.first_res - 1) * 3
-            end = prot_rec[0] + (rec.last_res - 1) * 3
+            start = prot_rec[0] + rec.first_res * 3
+            end = prot_rec[0] + rec.last_res * 3
         else:
-            start = prot_rec[0] + (prot_len - (rec.last_res - 1) * 3 - 1)
-            end = prot_rec[0] + (prot_len - (rec.first_res - 1) * 3 - 1)
+            start = prot_rec[0] + (prot_len - rec.last_res * 3 - 1)
+            end = prot_rec[0] + (prot_len - rec.first_res * 3 - 1)
 
         rec.interval = Interval(start, end, strand)
 
@@ -73,6 +74,12 @@ def filter_spectras(records):
     return [r for r in records if r in to_keep]
 
 
+def copy_html(prsms, out_dir):
+    for prsm in prsms:
+        html_name = os.path.join(out_dir, "spec{0}.html".format(prsm.spec_id))
+        shutil.copy2(prsm.html, html_name)
+
+
 def get_matches(table_file, prot_table, e_value):
     prsms = parse_msalign_output(table_file)
     prsms = filter_spectras(prsms)
@@ -86,35 +93,18 @@ def get_matches(table_file, prot_table, e_value):
         matches.append(GeneMatch(p.family, p.prsm_id, p.spec_id, p.p_value,
                                  p.e_value, p.interval.start,
                                  p.interval.end, p.interval.strand,
-                                 p.peptide, p.genome_seq, p.html))
-    return matches
+                                 p.peptide, p.genome_seq))
+    return prsms, matches
 
 
-def process_proteome(alignment_table, protein_table, e_value, out_stream):
-    gene_match = get_matches(alignment_table, protein_table, e_value)
-    gene_match_serialize(gene_match, out_stream, False)
+def process_proteome(alignment_table, protein_table, e_value, out_dir):
+    prsms, gene_match = get_matches(alignment_table, protein_table, e_value)
 
+    html_dir = os.path.join(out_dir, "prsm_html")
+    if os.path.isdir(html_dir):
+        shutil.rmtree(html_dir)
+    os.mkdir(html_dir)
+    copy_html(prsms, html_dir)
 
-def main():
-    parser = argparse.ArgumentParser(description="Processing MSAlign proteome run",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument("msalign_output", metavar="msalign_output",
-                        help="path to result_table.txt")
-    parser.add_argument("prot_table", metavar="prot_table",
-                        help="path to protein table")
-    #parser.add_argument("-f", "--family", action="store_const",
-    #                    dest="family", default=False, const=True,
-    #                    help="group by families")
-    parser.add_argument("-e", "--eval", dest="e_value", type=float,
-                        help="custom e-value threshold",
-                        default="0.01")
-
-    args = parser.parse_args()
-    process_proteome(args.msalign_output, args.prot_table,
-                     args.evalue, sys.stdout)
-    return 0
-
-
-if __name__ == "__main__":
-    main()
+    out_file = os.path.join(out_dir, "proteome.gm")
+    gene_match_serialize(gene_match, open(out_file, "w"), False)
