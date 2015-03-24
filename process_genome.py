@@ -51,6 +51,8 @@ def assign_genome_seqs(records, genome_file):
         if record.interval.strand < 0:
             genome_seq = genome_seq.reverse_complement()
 
+        genome_seq += "N" * (-len(genome_seq) % 3)
+
         translated = str(genome_seq.translate())
         translated = ".".join([translated[0:FLANK_LEN].lower(),
                                translated[FLANK_LEN:-FLANK_LEN+1],
