@@ -18,8 +18,10 @@ from common import (Prsm, GeneMatch, Interval, parse_msalign_output,
 def assign_intervals(records):
     CONV_SHIFT = 1
     for rec in records:
-        meta = rec.prot_name.split(" ")[0].split("::")[1]
+        seq_name, meta = rec.prot_name.split(" ")[0].split("::")
         direction, shift_len, genome_pos = meta.split("_")
+
+        rec.seq_name = seq_name
 
         if direction == "fwd":
             genomic_start = int(genome_pos) + rec.first_res * 3
@@ -43,10 +45,9 @@ def assign_genome_seqs(records, genome_file):
         if record.interval is None:
             continue
 
-        seq_name = record.prot_name.split("::")[0]
         flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
         flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
-        genome_seq = genome[seq_name].seq[flank_start:flank_end]
+        genome_seq = genome[record.seq_name].seq[flank_start:flank_end]
 
         if record.interval.strand < 0:
             genome_seq = genome_seq.reverse_complement()
@@ -60,17 +61,30 @@ def assign_genome_seqs(records, genome_file):
         record.genome_seq = translated
 
 
-def assign_families(records):
+def assign_families(records, genome_file):
+    #genome = get_fasta(genome_file)
+
     sets = {r.prsm_id : MakeSet(r) for r in records}
     for rec_1, rec_2 in combinations(records, 2):
         int_1 = rec_1.interval
         int_2 = rec_2.interval
+        if rec_1.seq_name != rec_2.seq_name:
+            continue
+
         #test for overlapping
-        #if ((int_1.start <= int_2.start and int_2.end <= int_1.end) or
-        #    (int_2.start <= int_1.start and int_1.end <= int_2.end)):
-        if ((int_1.start <= int_2.start <= int_1.end) or
-            (int_2.start <= int_1.start <= int_2.end)):
+        overlap = (min(int_1.end, int_2.end) -
+                   max(int_1.start, int_2.start))
+        if overlap > 0:
             Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
+        """
+        #"linking"
+        elif abs(overlap) < 90 and abs(int_1.start - int_2.start) % 3 == 0:
+            gap_start = min(int_1.end, int_2.end)
+            gap_end = max(int_1.start, int_2.start)
+            gap_seq = genome[rec_1.seq_name].seq[gap_start:gap_end].translate()
+            if "*" not in gap_seq:
+                Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
+        """
 
     by_family = defaultdict(list)
     for s in sets.values():
@@ -116,7 +130,7 @@ def get_matches(table_file, genome_file, e_value):
 
     assign_intervals(prsms)
     assign_genome_seqs(prsms, genome_file)
-    assign_families(trusted_prsms)
+    assign_families(trusted_prsms, genome_file)
 
     matches = []
     for p in prsms:

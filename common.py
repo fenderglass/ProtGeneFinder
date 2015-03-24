@@ -17,6 +17,7 @@ class Prsm:
         self.family = None
         self.interval = None
         self.genome_seq = None
+        self.seq_name = None
 
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
