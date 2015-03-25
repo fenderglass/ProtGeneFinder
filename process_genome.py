@@ -60,8 +60,7 @@ def assign_genome_seqs(records, genome_file):
 
 
 def assign_families(records, genome_file):
-    #genome = get_fasta(genome_file)
-
+    genome = get_fasta(genome_file)
     sets = {r.prsm_id : MakeSet(r) for r in records}
     for rec_1, rec_2 in combinations(records, 2):
         int_1 = rec_1.interval
@@ -74,15 +73,13 @@ def assign_families(records, genome_file):
                    max(int_1.start, int_2.start))
         if overlap > 0:
             Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
-        """
         #"linking"
-        elif abs(overlap) < 90 and abs(int_1.start - int_2.start) % 3 == 0:
+        elif abs(int_1.start - int_2.start) % 3 == 0:
             gap_start = min(int_1.end, int_2.end)
             gap_end = max(int_1.start, int_2.start)
             gap_seq = genome[rec_1.seq_name].seq[gap_start:gap_end].translate()
             if "*" not in gap_seq:
                 Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
-        """
 
     by_family = defaultdict(list)
     for s in sets.values():
