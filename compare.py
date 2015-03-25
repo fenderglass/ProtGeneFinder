@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 from __future__ import print_function
 import sys
 from common import read_gene_matches
 from collections import defaultdict
 import argparse
+import urllib2
 
 from Bio.Blast import NCBIWWW
 from Bio.Blast import NCBIXML
@@ -40,12 +41,10 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
     print("Fam_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
           "Qry_eval\tRef_start\tQry_start\tRef_prot\tQry_prot")
 
-    #matched_families = set()
     for r_fam_id, r_fam in ref_by_fam.items():
         #Matching query family based on overlap
         matches = []
         for q_fam_id in qry_by_fam:
-            #if q_fam_id in matched_families: continue
             q_pos = qry_family_pos[q_fam_id]
             r_pos = ref_family_pos[r_fam_id]
             overlap = max(0, min(q_pos[1], r_pos[1]) - max(q_pos[0], r_pos[0]))
@@ -54,13 +53,16 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
 
         matched_qry_fam = (sorted(matches, key=lambda t: t[1])[-1][0]
                            if matches else None)
-        #matched_families.add(matched_qry_fam)
 
         #now choose best families' spectrum
         ref_spec = min(ref_by_fam[r_fam_id], key=lambda r: r.e_value).spec_id
         if matched_qry_fam:
-            qry_spec = min(qry_by_fam[matched_qry_fam],
-                           key=lambda r: r.e_value).spec_id
+            qry_specs = map(lambda r: r.spec_id, qry_by_fam[matched_qry_fam])
+            if ref_spec in qry_specs:
+                qry_spec = ref_spec
+            else:
+                qry_spec = min(qry_by_fam[matched_qry_fam],
+                               key=lambda r: r.e_value).spec_id
         else:
             qry_spec = ref_spec
 
@@ -87,7 +89,10 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
             left = ref_protein.find(".")
             right = ref_protein.rfind(".")
             inner_prot = ref_protein[left+1:right]
-            if only_missmatched and not check_blast(inner_prot):
+            n_hits = check_blast(inner_prot)
+            if n_hits:
+                print("Hits: {0}".format(n_hits))
+            else:
                 continue
 
         found = "+" if matched_qry_fam is not None else "-"
@@ -100,13 +105,26 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
 
 def check_blast(query):
     MAX_EVAL = 0.01
-    result = NCBIWWW.qblast("blastp", "nr", query, expect=MAX_EVAL)
-    records = NCBIXML.parse(result)
+
+    retries = 10
+    records = None
+    while retries > 0:
+        try:
+            result = NCBIWWW.qblast("blastp", "nr", query, expect=MAX_EVAL)
+            records = NCBIXML.parse(result)
+            break
+        except urllib2.HTTPError as e:
+            print(e)
+            retries -= 1
+    if records is None:
+        raise Exception("Everything is bad!")
+
+    n_hits = 0
     for rec in records:
         for aln in rec.alignments:
             for hsp in aln.hsps:
-                return True
-    return False
+                n_hits += 1
+    return n_hits
 
 
 def main():
