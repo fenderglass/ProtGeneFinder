@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 import os
 
@@ -27,11 +25,3 @@ def merge_tables(tables, out_stream):
                 vals.append(html)
 
                 out_stream.write("\t".join(vals) + "\n")
-
-
-def main():
-    merge_tables(sys.argv[1:], sys.stdout)
-
-
-if __name__ == "__main__":
-    main()

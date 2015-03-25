@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 import sys
 import re
@@ -38,7 +36,7 @@ def assign_intervals(records):
 
 
 def assign_genome_seqs(records, genome_file):
-    FLANK_LEN = 20
+    FLANK_LEN = 10
     genome = get_fasta(genome_file)
 
     for record in records:
@@ -106,8 +104,8 @@ def filter_spectras(records):
 
     to_keep = set()
     for group in groups.itervalues():
-        by_eval = sorted(group, key=lambda r: r.e_value)
-        to_keep.add(by_eval[0])
+        by_pval = sorted(group, key=lambda r: r.p_value)
+        to_keep.add(by_pval[0])
 
     return [r for r in records if r in to_keep]
 

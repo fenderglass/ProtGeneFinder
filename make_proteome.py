@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 import os
 import sys
@@ -61,22 +59,3 @@ def slice_prot(filename, slice_size, glob_shift, file_out):
                 chunk = Seq(str(chunk).replace("*", "X"))
                 SeqIO.write(SeqRecord(seq=chunk, id=prot_name, description=""),
                             file_out, "fasta")
-
-
-def main():
-    if len(sys.argv) != 4:
-        print("Usage: make_proteome.py dna_fasta slice_size out_dir",
-              file=sys.stderr)
-        return 1
-
-    slice_size = int(sys.argv[2])
-    if slice_size % 2 == 1:
-        print("Slice size must be even", file=sys.stderr)
-        return 1
-
-    make_proteome(sys.argv[1], int(sys.argv[2]), sys.argv[3])
-    return 0
-
-
-if __name__ == "__main__":
-    main()
