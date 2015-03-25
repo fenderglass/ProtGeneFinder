@@ -59,7 +59,7 @@ def assign_genome_seqs(records, genome_file):
         record.genome_seq = translated
 
 
-def assign_families(records, genome_file):
+def assign_orf(records, genome_file):
     genome = get_fasta(genome_file)
     sets = {r.prsm_id : MakeSet(r) for r in records}
     for rec_1, rec_2 in combinations(records, 2):
@@ -74,20 +74,21 @@ def assign_families(records, genome_file):
         if overlap > 0:
             Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
         #"linking"
-        elif abs(int_1.start - int_2.start) % 3 == 0:
+        #TODO: optimize search
+        elif abs(overlap) < 3000 and abs(int_1.start - int_2.start) % 3 == 0:
             gap_start = min(int_1.end, int_2.end)
             gap_end = max(int_1.start, int_2.start)
             gap_seq = genome[rec_1.seq_name].seq[gap_start:gap_end].translate()
             if "*" not in gap_seq:
                 Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
 
-    by_family = defaultdict(list)
+    by_orf = defaultdict(list)
     for s in sets.values():
-        by_family[Find(s)].append(s.data)
+        by_orf[Find(s)].append(s.data)
 
-    for fam_id, prsms in enumerate(by_family.values()):
+    for orf_id, prsms in enumerate(by_orf.values()):
         for prsm in prsms:
-            prsm.family = fam_id
+            prsm.orf_id = orf_id
 
 
 def filter_evalue(records, e_value):
@@ -125,11 +126,11 @@ def get_matches(table_file, genome_file, e_value):
 
     assign_intervals(prsms)
     assign_genome_seqs(prsms, genome_file)
-    assign_families(trusted_prsms, genome_file)
+    assign_orf(trusted_prsms, genome_file)
 
     matches = []
     for p in prsms:
-        matches.append(GeneMatch(p.family, p.prsm_id, p.spec_id, p.p_value,
+        matches.append(GeneMatch(p.orf_id, p.prsm_id, p.spec_id, p.p_value,
                                  p.e_value, p.interval.start,
                                  p.interval.end, p.interval.strand,
                                  p.peptide, p.genome_seq))

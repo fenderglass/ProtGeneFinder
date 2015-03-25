@@ -14,7 +14,7 @@ class Prsm:
         self.e_value = e_value
         self.html = html
 
-        self.family = None
+        self.orf_id = None
         self.interval = None
         self.genome_seq = None
         self.seq_name = None
@@ -22,7 +22,7 @@ class Prsm:
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 
-GeneMatch = namedtuple("GeneMatch", ["family", "prsm_id", "spec_id", "p_value",
+GeneMatch = namedtuple("GeneMatch", ["orf_id", "prsm_id", "spec_id", "p_value",
                                      "e_value", "start", "end", "strand",
                                      "peptide", "genome_seq"])
 
@@ -46,15 +46,15 @@ def read_gene_matches(filename):
     gene_matches = []
     with open(filename, "r") as f:
         for line in f:
-            if line.startswith("Fam_id"):
+            if line.startswith("ORF_id"):
                 continue
 
             vals = line.strip().split("\t")
             strand = 1 if vals[7] == "+" else -1
-            family = int(vals[0]) if vals[0] != "*" else None
+            orf_id = int(vals[0]) if vals[0] != "*" else None
             genome_seq = vals[9] if vals[9] != "*" else None
 
-            gene_matches.append(GeneMatch(family, int(vals[1]), int(vals[2]),
+            gene_matches.append(GeneMatch(orf_id, int(vals[1]), int(vals[2]),
                                 float(vals[3]), float(vals[4]), int(vals[5]),
                                 int(vals[6]), strand, vals[8], genome_seq))
 
@@ -62,33 +62,33 @@ def read_gene_matches(filename):
 
 
 def gene_match_serialize(records, stream, family_mode):
-    rec_by_fam = defaultdict(list)
+    rec_by_orf = defaultdict(list)
     without_fam = []
     for r in records:
-        if r.family is not None:
-            rec_by_fam[r.family].append(r)
+        if r.orf_id is not None:
+            rec_by_orf[r.orf_id].append(r)
         else:
             without_fam.append(r)
 
-    stream.write("Fam_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
+    stream.write("ORF_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
                  "Peptide\tGenome_seq\n")
 
-    for family in chain(rec_by_fam.values(), [without_fam]):
-        by_eval = sorted(family, key=lambda r: r.e_value)
+    for orf_id in chain(rec_by_orf.values(), [without_fam]):
+        by_eval = sorted(orf_id, key=lambda r: r.e_value)
         if family_mode:
-            if by_eval[0].family is not None:
+            if by_eval[0].orf_id is not None:
                 by_eval = [by_eval[0]]
             else:
                 continue
 
         for m in by_eval:
             strand = "+" if m.strand > 0 else "-"
-            family = str(m.family) if m.family is not None else "*"
+            orf_id = str(m.orf_id) if m.orf_id is not None else "*"
             genome_seq = m.genome_seq if m.genome_seq is not None else "*"
 
             stream.write("{0}\t{1}\t{2}\t{3:4.2e}\t{4:4.2e}\t{5}\t{6}\t{7}\t{8}"
                          "\t{9}\n"
-                         .format(family, m.prsm_id, m.spec_id, m.p_value,
+                         .format(orf_id, m.prsm_id, m.spec_id, m.p_value,
                                  m.e_value, m.start, m.end, strand, m.peptide,
                                  genome_seq))
 

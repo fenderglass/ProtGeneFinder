@@ -42,7 +42,7 @@ def assign_intervals(records, protein_table):
         rec.interval = Interval(start, end, strand)
 
 
-def assign_families(records):
+def assign_orf(records):
     families = []
     by_prsm = {r.prsm_id : r for r in records}
 
@@ -52,7 +52,7 @@ def assign_families(records):
 
     for f_id, group in enumerate(group_spectra.values()):
         for rec in group:
-            rec.family = f_id
+            rec.orf_id = f_id
 
 
 def filter_evalue(records, e_value):
@@ -84,11 +84,11 @@ def get_matches(table_file, prot_table, e_value):
     trusted_prsms = filter_evalue(prsms, e_value)
 
     assign_intervals(prsms, prot_table)
-    assign_families(trusted_prsms)
+    assign_orf(trusted_prsms)
 
     matches = []
     for p in prsms:
-        matches.append(GeneMatch(p.family, p.prsm_id, p.spec_id, p.p_value,
+        matches.append(GeneMatch(p.orf_id, p.prsm_id, p.spec_id, p.p_value,
                                  p.e_value, p.interval.start,
                                  p.interval.end, p.interval.strand,
                                  p.peptide, p.genome_seq))

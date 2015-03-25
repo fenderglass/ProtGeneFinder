@@ -15,8 +15,8 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
     #various indexes
     ref_by_fam = defaultdict(list)
     for r in ref_records:
-        if r.family is not None and (-1 not in [r.start, r.end]):
-            ref_by_fam[r.family].append(r)
+        if r.orf_id is not None and (-1 not in [r.start, r.end]):
+            ref_by_fam[r.orf_id].append(r)
 
     ref_family_pos = {}
     for fam, records in ref_by_fam.items():
@@ -26,8 +26,8 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
 
     qry_by_fam = defaultdict(list)
     for r in qry_records:
-        if r.family is not None and (-1 not in [r.start, r.end]):
-            qry_by_fam[r.family].append(r)
+        if r.orf_id is not None and (-1 not in [r.start, r.end]):
+            qry_by_fam[r.orf_id].append(r)
 
     qry_family_pos = {}
     for fam, records in qry_by_fam.items():
@@ -38,7 +38,7 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
     ref_rec_by_spec = {r.spec_id : r for r in ref_records}
     qry_rec_by_spec = {r.spec_id : r for r in qry_records}
 
-    print("Fam_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
+    print("ORF_id\tSpec_id\tFound\tRef_pval\tRef_eval\tQry_pval\t"
           "Qry_eval\tRef_start\tQry_start\tRef_prot\tQry_prot")
 
     for r_fam_id, r_fam in ref_by_fam.items():
