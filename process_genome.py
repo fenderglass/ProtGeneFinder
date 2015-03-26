@@ -17,7 +17,7 @@ def assign_intervals(records):
     CONV_SHIFT = 1
     for rec in records:
         seq_name, meta = rec.prot_name.split(" ")[0].split("::")
-        direction, shift_len, genome_pos = meta.split("_")
+        direction, genome_pos = meta.split("_")
 
         rec.seq_name = seq_name
 

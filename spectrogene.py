@@ -15,7 +15,7 @@ from process_genome import process_genome
 from process_proteome import process_proteome
 
 TOPPIC_BIN = "toppic"
-WINDOWS = [500, 230, 110, 60]
+WINDOWS = [500, 200, 50]
 
 def run_instance(proteome_file, spectrum_file, work_dir):
     cmdline = [TOPPIC_BIN, proteome_file, spectrum_file, "--max-ptm", "500",
@@ -128,40 +128,34 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
             os.mkdir(window_dir)
 
         print("Creating proteome")
-        prot_file_1, prot_file_2 = make_proteome(input_genome, window,
-                                                 window_dir)
+        prot_file = os.path.join(window_dir, "proteome.fasta")
+        make_proteome(input_genome, window, prot_file)
         print("Reading spectrum")
         spectras_text = read_spectrum_file(input_spectrum)
-
-        proc_per_half = int(num_proc / 2)
-        spec_splitted = split_n(spectras_text, proc_per_half)
+        spec_splitted = split_n(spectras_text, num_proc)
         threads = []
 
-        def run_for_half(inst_pref, proteome):
-            for i in range(proc_per_half):
-                inst_name = "{0}_{1}".format(inst_pref, i)
-                inst_workdir = os.path.join(window_dir, inst_name)
-                if os.path.isdir(inst_workdir):
-                    shutil.rmtree(inst_workdir)
-                os.mkdir(inst_workdir)
+        for i in range(num_proc):
+            inst_name = "part_" + str(i)
+            inst_workdir = os.path.join(window_dir, inst_name)
+            if os.path.isdir(inst_workdir):
+                shutil.rmtree(inst_workdir)
+            os.mkdir(inst_workdir)
 
-                inst_spec = os.path.join(inst_workdir, "spectra.msalign")
-                write_spectras(spec_splitted[i], inst_spec)
+            inst_spec = os.path.join(inst_workdir, "spectra.msalign")
+            write_spectras(spec_splitted[i], inst_spec)
 
-                inst_prot = os.path.join(inst_workdir, "proteome.fasta")
-                shutil.copy2(proteome, inst_prot)
+            inst_prot = os.path.join(inst_workdir, "proteome.fasta")
+            shutil.copy2(prot_file, inst_prot)
 
-                print("Running {0} instance".format(inst_name))
-                thread = Thread(target=run_instance,
-                                args=(inst_prot, inst_spec, inst_workdir))
-                thread.start()
-                threads.append(thread)
+            print("Running {0} instance".format(inst_name))
+            thread = Thread(target=run_instance,
+                            args=(inst_prot, inst_spec, inst_workdir))
+            thread.start()
+            threads.append(thread)
 
-                out_file = os.path.join(inst_workdir, "spectra.OUTPUT_TABLE")
-                output_files.append(out_file)
-
-        run_for_half("noshift", prot_file_1)
-        run_for_half("halfshift", prot_file_2)
+            out_file = os.path.join(inst_workdir, "spectra.OUTPUT_TABLE")
+            output_files.append(out_file)
 
         for t in threads:
             t.join()
@@ -171,7 +165,8 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
 
 def main():
     EVALUE = 0.01
-    parser = argparse.ArgumentParser(description="Run MSAlign on genome/proteome")
+    parser = argparse.ArgumentParser(description="Genome annotation using "
+                                               "top-down mass spectrometry")
     subparsers = parser.add_subparsers(help="sub-command help", dest="mode")
 
     parser_proteome = subparsers.add_parser("proteome", help="proteome mode")
@@ -188,7 +183,7 @@ def main():
     parser_genome.add_argument("spectrum_file", help="path to spectrum file")
     parser_genome.add_argument("output_dir", help="output directory")
     parser_genome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
-                               help="number of processes", default="2")
+                               help="number of processes", default="1")
 
     args = parser.parse_args(sys.argv[1:])
 
