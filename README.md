@@ -1,1 +1,1 @@
-A set of scripts for gene calling using MSAlign+ 
+A tool for genome annotation using top-down mass spectrometry.
