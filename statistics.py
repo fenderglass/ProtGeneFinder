@@ -8,7 +8,7 @@ from common import read_gene_matches
 
 def calc_statistics(gene_matches):
     print("Total spectra:\t{0}".format(len(gene_matches)))
-    ident_spectra = [g for g in gene_matches if g.family is not None]
+    ident_spectra = [g for g in gene_matches if g.orf_id is not None]
 
     print("\nBy identified spectra:\n------------------------")
     print("Total:\t{0} ({1:4.2f}%)"
@@ -31,12 +31,12 @@ def calc_statistics(gene_matches):
     #group by family
     by_family = defaultdict(list)
     for gm in ident_spectra:
-        by_family[gm.family].append(gm)
+        by_family[gm.orf_id].append(gm)
     longest_in_fam = []
     for fam in by_family.values():
         longest_in_fam.append(sorted(fam, key=lambda g: g.e_value)[0])
 
-    print("\n\nBy family (for best match)\n--------------------------")
+    print("\n\nBy ORF (for best match)\n--------------------------")
     print("Total:\t{0}".format(len(longest_in_fam)))
     process_group(longest_in_fam)
 
