@@ -19,27 +19,23 @@ def assign_intervals(records, protein_table):
             strand = 1 if tokens[3] == "+" else -1
             prot_table_data[tokens[0]] = (start, end, strand)
 
-    fail_counter = 0
     for rec in records:
         prot_id = rec.prot_name.split(" ")[0].split("|")[1]
         if prot_id not in prot_table_data:
             rec.interval = Interval(-1, -1, 1)
-            fail_counter += 1
             continue
 
-        prot_rec = prot_table_data[prot_id]
-        prot_len = prot_rec[1] - prot_rec[0] + 1
-        assert prot_len > 0
-        strand = prot_rec[2]
+        p_start, p_end, p_strand = prot_table_data[prot_id]
+        prot_len = p_end - p_start + 1
 
-        if prot_rec[2] > 0:
-            start = prot_rec[0] + rec.first_res * 3
-            end = prot_rec[0] + rec.last_res * 3
+        if p_strand > 0:
+            start = p_start + rec.first_res * 3
+            end = p_start + rec.last_res * 3
         else:
-            start = prot_rec[0] + (prot_len - rec.last_res * 3 - 1)
-            end = prot_rec[0] + (prot_len - rec.first_res * 3 - 1)
+            start = p_start + (prot_len - rec.last_res * 3)
+            end = p_start + (prot_len - rec.first_res * 3)
 
-        rec.interval = Interval(start, end, strand)
+        rec.interval = Interval(start, end, p_strand)
 
 
 def assign_orf(records):
@@ -73,6 +69,9 @@ def filter_spectras(records):
 
 
 def copy_html(prsms, out_dir):
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+    os.mkdir(out_dir)
     for prsm in prsms:
         html_name = os.path.join(out_dir, "spec{0}.html".format(prsm.spec_id))
         shutil.copy2(prsm.html, html_name)
@@ -99,9 +98,6 @@ def process_proteome(alignment_table, protein_table, e_value, out_dir):
     prsms, gene_match = get_matches(alignment_table, protein_table, e_value)
 
     html_dir = os.path.join(out_dir, "prsm_html")
-    if os.path.isdir(html_dir):
-        shutil.rmtree(html_dir)
-    os.mkdir(html_dir)
     copy_html(prsms, html_dir)
 
     out_file = os.path.join(out_dir, "proteome.gm")

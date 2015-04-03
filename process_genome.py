@@ -73,7 +73,7 @@ def assign_orf(records, genome_file):
                    max(int_1.start, int_2.start))
         if overlap > 0:
             Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
-        #"linking"
+        #linking into ORFs
         #TODO: optimize search
         elif abs(overlap) < 3000 and abs(int_1.start - int_2.start) % 3 == 0:
             gap_start = min(int_1.end, int_2.end)
@@ -113,6 +113,9 @@ def get_fasta(filename):
 
 
 def copy_html(prsms, out_dir):
+    if os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+    os.mkdir(out_dir)
     for prsm in prsms:
         html_name = os.path.join(out_dir, "spec{0}.html".format(prsm.spec_id))
         shutil.copy2(prsm.html, html_name)
@@ -143,9 +146,6 @@ def process_genome(alignment_table, fasta_file, evalue, out_dir):
                                     evalue)
 
     html_dir = os.path.join(out_dir, "prsm_html")
-    if os.path.isdir(html_dir):
-        shutil.rmtree(html_dir)
-    os.mkdir(html_dir)
     copy_html(prsms, html_dir)
 
     out_file = os.path.join(out_dir, "genome.gm")
