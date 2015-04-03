@@ -76,6 +76,8 @@ def process_group(intervals, sequences):
 
     for interval in intervals:
         FLANK = 36
+        if interval.start == -1:
+            continue
         seq = sequences[chr_id][interval.start - 1 - FLANK :
                                 interval.end - 1 + FLANK]
         peptide = (seq.translate() if interval.strand > 0 else
