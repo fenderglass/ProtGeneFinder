@@ -164,9 +164,9 @@ def run_parallel_genome(input_genome, input_spectrum, work_dir, num_proc):
 
 
 def main():
-    EVALUE = 0.01
     parser = argparse.ArgumentParser(description="Genome annotation using "
                                                "top-down mass spectrometry")
+
     subparsers = parser.add_subparsers(help="sub-command help", dest="mode")
 
     parser_proteome = subparsers.add_parser("proteome", help="proteome mode")
@@ -177,6 +177,9 @@ def main():
     parser_proteome.add_argument("output_dir", help="output directory")
     parser_proteome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
                                  help="number of processes", default="1")
+    parser_proteome.add_argument("-e", "--evalue", dest="e_value", type=float,
+                            help="E-value threshold for PrSM [default 0.01]",
+                            default="0.01")
 
     parser_genome = subparsers.add_parser("genome", help="genome mode")
     parser_genome.add_argument("genome_file", help="path to genome file")
@@ -184,6 +187,9 @@ def main():
     parser_genome.add_argument("output_dir", help="output directory")
     parser_genome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
                                help="number of processes", default="1")
+    parser_genome.add_argument("-e", "--evalue", dest="e_value", type=float,
+                            help="E-value threshold for PrSM [default 0.01]",
+                            default="0.01")
 
     args = parser.parse_args(sys.argv[1:])
 
@@ -193,13 +199,13 @@ def main():
                                         args.output_dir, args.num_proc)
         merge_tables(out_files, open(merged_output, "w"))
         process_genome(merged_output, args.genome_file,
-                       EVALUE, args.output_dir)
+                       args.e_value, args.output_dir)
     else:
         out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
                                           args.output_dir, args.num_proc)
         merge_tables(out_files, open(merged_output, "w"))
         process_proteome(merged_output, args.prot_coords,
-                         EVALUE, args.output_dir)
+                         args.e_value, args.output_dir)
     return 0
 
 
