@@ -19,7 +19,7 @@ def assign_intervals(records):
         seq_name, meta = rec.prot_name.split(" ")[0].split("::")
         direction, genome_pos = meta.split("_")
 
-        rec.seq_name = seq_name
+        rec.chr_id = seq_name
 
         if direction == "fwd":
             genomic_start = int(genome_pos) + rec.first_res * 3
@@ -45,7 +45,7 @@ def assign_genome_seqs(records, genome_file):
 
         flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
         flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
-        genome_seq = genome[record.seq_name].seq[flank_start:flank_end]
+        genome_seq = genome[record.chr_id].seq[flank_start:flank_end]
 
         if record.interval.strand < 0:
             genome_seq = genome_seq.reverse_complement()
@@ -61,26 +61,25 @@ def assign_genome_seqs(records, genome_file):
 
 def assign_orf(records, genome_file):
     genome = get_fasta(genome_file)
-    sets = {r.prsm_id : MakeSet(r) for r in records}
+    sets = {r : MakeSet(r) for r in records}
     for rec_1, rec_2 in combinations(records, 2):
         int_1 = rec_1.interval
         int_2 = rec_2.interval
-        if rec_1.seq_name != rec_2.seq_name:
+        if rec_1.chr_id != rec_2.chr_id:
             continue
 
-        #test for overlapping
+        #linking into ORFs
         overlap = (min(int_1.end, int_2.end) -
                    max(int_1.start, int_2.start))
-        if overlap > 0:
-            Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
-        #linking into ORFs
+        if overlap > 0 and overlap % 3 == 0:
+            Union(sets[rec_1], sets[rec_2])
         #TODO: optimize search
         elif abs(overlap) < 3000 and abs(int_1.start - int_2.start) % 3 == 0:
             gap_start = min(int_1.end, int_2.end)
             gap_end = max(int_1.start, int_2.start)
-            gap_seq = genome[rec_1.seq_name].seq[gap_start:gap_end].translate()
+            gap_seq = genome[rec_1.chr_id].seq[gap_start:gap_end].translate()
             if "*" not in gap_seq:
-                Union(sets[rec_1.prsm_id], sets[rec_2.prsm_id])
+                Union(sets[rec_1], sets[rec_2])
 
     by_orf = defaultdict(list)
     for s in sets.values():
@@ -126,15 +125,14 @@ def get_matches(table_file, genome_file, e_value):
     prsms = filter_spectras(prsms)
     trusted_prsms = filter_evalue(prsms, e_value)
 
-
     assign_intervals(prsms)
     assign_genome_seqs(prsms, genome_file)
     assign_orf(trusted_prsms, genome_file)
 
     matches = []
     for p in prsms:
-        matches.append(GeneMatch(p.orf_id, p.prsm_id, p.spec_id, p.p_value,
-                                 p.e_value, p.interval.start,
+        matches.append(GeneMatch(p.orf_id, p.spec_id, p.p_value, p.e_value,
+                                 p.chr_id, p.interval.start,
                                  p.interval.end, p.interval.strand,
                                  p.peptide, p.genome_seq))
 

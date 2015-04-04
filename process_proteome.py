@@ -15,9 +15,9 @@ def assign_intervals(records, protein_table):
     with open(protein_table, "r") as f:
         for line in f:
             tokens = line.strip().split()
-            start, end = int(tokens[1]), int(tokens[2])
+            start, end, chr_id = int(tokens[1]), int(tokens[2]), tokens[4]
             strand = 1 if tokens[3] == "+" else -1
-            prot_table_data[tokens[0]] = (start, end, strand)
+            prot_table_data[tokens[0]] = (start, end, strand, chr_id)
 
     for rec in records:
         prot_id = rec.prot_name.split(" ")[0].split("|")[1]
@@ -25,7 +25,7 @@ def assign_intervals(records, protein_table):
             rec.interval = Interval(-1, -1, 1)
             continue
 
-        p_start, p_end, p_strand = prot_table_data[prot_id]
+        p_start, p_end, p_strand, p_chr_id = prot_table_data[prot_id]
         prot_len = p_end - p_start + 1
 
         if p_strand > 0:
@@ -36,11 +36,11 @@ def assign_intervals(records, protein_table):
             end = p_start + (prot_len - rec.first_res * 3)
 
         rec.interval = Interval(start, end, p_strand)
+        rec.chr_id = p_chr_id
 
 
 def assign_orf(records):
     families = []
-    by_prsm = {r.prsm_id : r for r in records}
 
     group_spectra = defaultdict(list)
     for rec in records:
@@ -87,10 +87,9 @@ def get_matches(table_file, prot_table, e_value):
 
     matches = []
     for p in prsms:
-        matches.append(GeneMatch(p.orf_id, p.prsm_id, p.spec_id, p.p_value,
-                                 p.e_value, p.interval.start,
-                                 p.interval.end, p.interval.strand,
-                                 p.peptide, p.genome_seq))
+        matches.append(GeneMatch(p.orf_id, p.spec_id, p.p_value, p.e_value,
+                                 p.chr_id, p.interval.start, p.interval.end,
+                                 p.interval.strand, p.peptide, p.genome_seq))
     return prsms, matches
 
 

@@ -129,7 +129,8 @@ def check_blast(query):
 
 def main():
     parser = argparse.ArgumentParser(description="Compare two GM files",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                     formatter_class=\
+                                        argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("ref_table", metavar="ref_table",
                         help="path to reference table in gm format")
@@ -146,7 +147,8 @@ def main():
 
     ref_gene_match = read_gene_matches(args.ref_table)
     qry_gene_match = read_gene_matches(args.qry_table)
-    compare_by_positions(ref_gene_match, qry_gene_match, args.missmatch, args.blast)
+    compare_by_positions(ref_gene_match, qry_gene_match,
+                         args.missmatch, args.blast)
 
 
 if __name__ == "__main__":

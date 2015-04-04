@@ -2,9 +2,8 @@ from itertools import chain
 from collections import namedtuple, defaultdict
 
 class Prsm:
-    def __init__(self, prsm_id, spec_id, prot_name, first_res,
+    def __init__(self, spec_id, prot_name, first_res,
                  last_res, peptide, p_value, e_value, html):
-        self.prsm_id = prsm_id
         self.spec_id = spec_id
         self.prot_name = prot_name
         self.first_res = first_res
@@ -17,13 +16,13 @@ class Prsm:
         self.orf_id = None
         self.interval = None
         self.genome_seq = None
-        self.seq_name = None
+        self.chr_id = None
 
 
 Interval = namedtuple("Interval", ["start", "end", "strand"])
 
-GeneMatch = namedtuple("GeneMatch", ["orf_id", "prsm_id", "spec_id", "p_value",
-                                     "e_value", "start", "end", "strand",
+GeneMatch = namedtuple("GeneMatch", ["orf_id", "spec_id", "p_value", "e_value",
+                                     "chr_id", "start", "end", "strand",
                                      "peptide", "genome_seq"])
 
 def parse_msalign_output(filename):
@@ -35,7 +34,7 @@ def parse_msalign_output(filename):
                 continue
 
             vals = line.split("\t")
-            rows.append(Prsm(int(vals[1]), int(vals[2]), vals[11], int(vals[13]),
+            rows.append(Prsm(int(vals[2]), vals[11], int(vals[13]),
                              int(vals[14]), vals[15], float(vals[19]),
                              float(vals[20]), vals[23]))
 
@@ -54,8 +53,8 @@ def read_gene_matches(filename):
             orf_id = int(vals[0]) if vals[0] != "*" else None
             genome_seq = vals[9] if vals[9] != "*" else None
 
-            gene_matches.append(GeneMatch(orf_id, int(vals[1]), int(vals[2]),
-                                float(vals[3]), float(vals[4]), int(vals[5]),
+            gene_matches.append(GeneMatch(orf_id, int(vals[1]), float(vals[2]),
+                                float(vals[3]), vals[4], int(vals[5]),
                                 int(vals[6]), strand, vals[8], genome_seq))
 
     return gene_matches
@@ -70,7 +69,7 @@ def gene_match_serialize(records, stream, family_mode):
         else:
             without_fam.append(r)
 
-    stream.write("ORF_id\tPrsm_id\tSpec_id\tP_value\tE_val\tStart\tEnd\tStrand\t"
+    stream.write("ORF_id\tSpec_id\tP_value\tE_val\tChr_id\tStart\tEnd\tStrand\t"
                  "Peptide\tGenome_seq\n")
 
     for orf_id in chain(rec_by_orf.values(), [without_fam]):
@@ -86,10 +85,10 @@ def gene_match_serialize(records, stream, family_mode):
             orf_id = str(m.orf_id) if m.orf_id is not None else "*"
             genome_seq = m.genome_seq if m.genome_seq is not None else "*"
 
-            stream.write("{0}\t{1}\t{2}\t{3:4.2e}\t{4:4.2e}\t{5}\t{6}\t{7}\t{8}"
+            stream.write("{0}\t{1}\t{2:4.2e}\t{3:4.2e}\t{4}\t{5}\t{6}\t{7}\t{8}"
                          "\t{9}\n"
-                         .format(orf_id, m.prsm_id, m.spec_id, m.p_value,
-                                 m.e_value, m.start, m.end, strand, m.peptide,
+                         .format(orf_id, m.spec_id, m.p_value, m.e_value,
+                                 m.chr_id, m.start, m.end, strand, m.peptide,
                                  genome_seq))
 
 
