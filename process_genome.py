@@ -75,8 +75,8 @@ def assign_orf(records, genome_file):
             Union(sets[rec_1], sets[rec_2])
         #TODO: optimize search
         elif abs(overlap) < 3000 and abs(int_1.start - int_2.start) % 3 == 0:
-            gap_start = min(int_1.end, int_2.end)
-            gap_end = max(int_1.start, int_2.start)
+            gap_start = min(int_1.end, int_2.end) - 1
+            gap_end = max(int_1.start, int_2.start) - 1
             gap_seq = genome[rec_1.chr_id].seq[gap_start:gap_end].translate()
             if "*" not in gap_seq:
                 Union(sets[rec_1], sets[rec_2])

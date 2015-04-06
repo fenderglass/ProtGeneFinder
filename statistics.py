@@ -72,6 +72,7 @@ def process_group(intervals, sequences):
     num_stop_codon = 0
     num_signal = 0
     num_orf = 0
+    num_stop_inside = 0
     lengths = []
 
     for interval in intervals:
@@ -103,6 +104,9 @@ def process_group(intervals, sequences):
         if (peptide[left - 1] == "A" and peptide[left] == "A"):
             num_signal += 1
 
+        if "*" in peptide[left:right]:
+            num_stop_inside += 1
+
     num_proper_start = num_start_codon_right + num_start_codon_left
     median_len = sorted(lengths)[len(lengths) / 2]
 
@@ -115,6 +119,7 @@ def process_group(intervals, sequences):
     print("ORF (begins/preceds with start codon AND ends "
           "with stop):\t{0} ({1:4.2f}%)"
           .format(num_orf, 100 * float(num_orf) / num_matched))
+    print("Stop Codons inside: {0}".format(num_stop_inside))
     print("")
     print("Canonical signal peptide site AA:\t{0} ({1:4.2f}%)"
           .format(num_signal, 100 * float(num_signal) / num_matched))
