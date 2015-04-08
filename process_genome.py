@@ -21,17 +21,17 @@ def assign_intervals(records):
 
         rec.chr_id = seq_name
 
+        first, last = rec.first_res, rec.last_res + 1
         if direction == "fwd":
-            genomic_start = int(genome_pos) + rec.first_res * 3
-            genomic_end = int(genome_pos) + rec.last_res * 3
+            genomic_start = int(genome_pos) + first * 3 + CONV_SHIFT
+            genomic_end = int(genome_pos) + last * 3
+            #assert (genomic_end - genomic_start + 1) % 3 == 0
         elif direction == "rev":
-            genomic_start = int(genome_pos) - rec.last_res * 3 + 1    #why +1??
-            genomic_end = int(genome_pos) - rec.first_res * 3 + 1     #why +1??
+            genomic_start = int(genome_pos) - last * 3 + 2
+            genomic_end = int(genome_pos) - first * 3 + 1
+            #assert (genomic_end - genomic_start + 1) % 3 == 0
 
-        assert genomic_end >= genomic_start
-
-        rec.interval = Interval(genomic_start + CONV_SHIFT,
-                                genomic_end + CONV_SHIFT,
+        rec.interval = Interval(genomic_start, genomic_end,
                                 1 if direction == "fwd" else -1)
 
 
@@ -44,18 +44,16 @@ def assign_genome_seqs(records, genome_file):
             continue
 
         flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
-        flank_end = (record.interval.end - 1) + (FLANK_LEN * 3)
+        flank_end = record.interval.end + (FLANK_LEN * 3)
         genome_seq = genome[record.chr_id].seq[flank_start:flank_end]
 
         if record.interval.strand < 0:
             genome_seq = genome_seq.reverse_complement()
 
-        genome_seq += "N" * (-len(genome_seq) % 3)
-
         translated = str(genome_seq.translate())
         translated = ".".join([translated[0:FLANK_LEN].lower(),
-                               translated[FLANK_LEN:-FLANK_LEN+1],
-                               translated[-FLANK_LEN+1:].lower()])
+                               translated[FLANK_LEN:-FLANK_LEN],
+                               translated[-FLANK_LEN:].lower()])
         record.genome_seq = translated
 
 
@@ -70,15 +68,17 @@ def assign_orf(records, genome_file):
 
         #linking into ORFs
         overlap = (min(int_1.end, int_2.end) -
-                   max(int_1.start, int_2.start))
+                   max(int_1.start, int_2.start) + 1)
         if overlap > 0 and overlap % 3 == 0:
             Union(sets[rec_1], sets[rec_2])
         #TODO: optimize search
         elif abs(overlap) < 3000 and abs(int_1.start - int_2.start) % 3 == 0:
-            gap_start = min(int_1.end, int_2.end) - 1
+            gap_start = min(int_1.end, int_2.end)
             gap_end = max(int_1.start, int_2.start) - 1
-            gap_seq = genome[rec_1.chr_id].seq[gap_start:gap_end].translate()
-            if "*" not in gap_seq:
+            gap_seq = genome[rec_1.chr_id].seq[gap_start:gap_end]
+            if int_1.strand < 0:
+                gap_seq = gap_seq.reverse_complement()
+            if "*" not in gap_seq.translate():
                 Union(sets[rec_1], sets[rec_2])
 
     by_orf = defaultdict(list)
@@ -87,7 +87,7 @@ def assign_orf(records, genome_file):
 
     for orf_id, prsms in enumerate(by_orf.values()):
         for prsm in prsms:
-            prsm.orf_id = orf_id
+            prsm.orf_id = orf_id + 1
 
 
 def filter_evalue(records, e_value):

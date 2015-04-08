@@ -6,6 +6,9 @@ from itertools import combinations
 import os
 import shutil
 
+from Bio.Seq import Seq
+from Bio import SeqIO
+
 from common import (Prsm, GeneMatch, Interval, parse_msalign_output,
                     gene_match_serialize)
 
@@ -15,9 +18,9 @@ def assign_intervals(records, protein_table):
     with open(protein_table, "r") as f:
         for line in f:
             tokens = line.strip().split()
-            start, end, chr_id = int(tokens[1]), int(tokens[2]), tokens[4]
-            strand = 1 if tokens[3] == "+" else -1
-            prot_table_data[tokens[0]] = (start, end, strand, chr_id)
+            start, strand, chr_id = int(tokens[1]), tokens[2], tokens[3]
+            strand = 1 if strand == "+" else -1
+            prot_table_data[tokens[0]] = (start, strand, chr_id)
 
     for rec in records:
         prot_id = rec.prot_name.split(" ")[0].split("|")[1]
@@ -25,18 +28,48 @@ def assign_intervals(records, protein_table):
             rec.interval = Interval(-1, -1, 1)
             continue
 
-        p_start, p_end, p_strand, p_chr_id = prot_table_data[prot_id]
-        prot_len = p_end - p_start + 1
+        p_start, p_strand, p_chr_id = prot_table_data[prot_id]
 
+        first, last = rec.first_res, rec.last_res + 1
         if p_strand > 0:
-            start = p_start + rec.first_res * 3
-            end = p_start + rec.last_res * 3
+            start = p_start + first * 3
+            end = p_start + last * 3 - 1
         else:
-            start = p_start + (prot_len - rec.last_res * 3)
-            end = p_start + (prot_len - rec.first_res * 3)
+            start = p_start - last * 3 + 1
+            end = p_start - first * 3
 
         rec.interval = Interval(start, end, p_strand)
         rec.chr_id = p_chr_id
+        rec.prot_id = prot_id
+
+
+"""
+def assign_genome_seqs(records, genome_file):
+    FLANK_LEN = 10
+    genome = get_fasta(genome_file)
+
+    for record in records:
+        if record.interval.start == -1:
+            continue
+
+        flank_start = (record.interval.start - 1) - (FLANK_LEN * 3)
+        flank_end = record.interval.end + (FLANK_LEN * 3)
+        genome_seq = genome[record.chr_id].seq[flank_start:flank_end]
+
+        if record.interval.strand < 0:
+            genome_seq = genome_seq.reverse_complement()
+
+        translated = str(genome_seq.translate())
+        translated = ".".join([translated[0:FLANK_LEN].lower(),
+                               translated[FLANK_LEN:-FLANK_LEN],
+                               translated[-FLANK_LEN:].lower()])
+
+        record.genome_seq = translated
+
+
+def get_fasta(filename):
+    return {r.id : r for r in SeqIO.parse(filename, "fasta")}
+"""
 
 
 def assign_orf(records):
@@ -48,7 +81,7 @@ def assign_orf(records):
 
     for f_id, group in enumerate(group_spectra.values()):
         for rec in group:
-            rec.orf_id = f_id
+            rec.orf_id = f_id + 1
 
 
 def filter_evalue(records, e_value):
@@ -83,6 +116,7 @@ def get_matches(table_file, prot_table, e_value):
     trusted_prsms = filter_evalue(prsms, e_value)
 
     assign_intervals(prsms, prot_table)
+    #assign_genome_seqs(prsms, "datasets/Salmonella_msalign/S.Typhimurium.fasta")
     assign_orf(trusted_prsms)
 
     matches = []

@@ -80,7 +80,7 @@ def process_group(intervals, sequences):
         if interval.start == -1:
             continue
         seq = sequences[chr_id][interval.start - 1 - FLANK :
-                                interval.end - 1 + FLANK]
+                                interval.end + FLANK]
         peptide = (seq.translate() if interval.strand > 0 else
                    seq.reverse_complement().translate())
         left = FLANK / 3
