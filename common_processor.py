@@ -7,8 +7,9 @@ import shutil
 from Bio.Seq import Seq
 from Bio import SeqIO
 
-from common import (GeneMatch, parse_msalign_output,
-                    gene_match_serialize, MakeSet, Union, Find)
+from datatypes import (GeneMatch, parse_msalign_output,
+                       gene_match_serialize)
+from disjoint_set import MakeSet, Union, Find
 
 
 class CommonProcessor(object):

@@ -1,5 +1,5 @@
 from common_processor import CommonProcessor
-from common import Interval
+from datatypes import Interval
 
 class ProteomeProcessor(CommonProcessor):
     def __init__(self, e_value, genome_fasta, prot_alignment):

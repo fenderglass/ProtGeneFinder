@@ -90,37 +90,3 @@ def gene_match_serialize(records, stream, family_mode):
                          .format(orf_id, m.spec_id, m.p_value, m.e_value,
                                  m.chr_id, m.start, m.end, strand, m.peptide,
                                  genome_seq))
-
-
-##################
-class SetObject:
-    pass
-
-
-def MakeSet(x):
-    s = SetObject()
-    s.parent = s
-    s.rank   = 0
-    s.data = x
-    return s
-
-
-def Union(x, y):
-    xRoot = Find(x)
-    yRoot = Find(y)
-    if xRoot.rank > yRoot.rank:
-        yRoot.parent = xRoot
-    elif xRoot.rank < yRoot.rank:
-        xRoot.parent = yRoot
-    elif xRoot != yRoot:
-        yRoot.parent = xRoot
-        xRoot.rank = xRoot.rank + 1
-
-
-def Find(x):
-    if x.parent == x:
-       return x
-    else:
-       x.parent = Find(x.parent)
-       return x.parent
-##################
