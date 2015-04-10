@@ -11,8 +11,8 @@ import argparse
 
 from make_proteome import make_proteome
 from merge_tables import merge_tables
-from process_genome import process_genome
-from process_proteome import process_proteome
+from process_genome import GenomeProcessor
+from process_proteome import ProteomeProcessor
 
 TOPPIC_BIN = "toppic"
 WINDOWS = [500, 200, 50]
@@ -173,6 +173,7 @@ def main():
     parser_proteome.add_argument("prot_file", help="path to proteome file")
     parser_proteome.add_argument("prot_coords", help="a file with protein "
                                                      "coordinates")
+    parser_proteome.add_argument("genome_file", help="path to fasta file")
     parser_proteome.add_argument("spectrum_file", help="path to spectrum file")
     parser_proteome.add_argument("output_dir", help="output directory")
     parser_proteome.add_argument("-p", "--num_proc", dest="num_proc", type=int,
@@ -193,19 +194,22 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    merged_output = os.path.join(args.output_dir, "toppic_merged.txt")
     if args.mode == "genome":
         out_files = run_parallel_genome(args.genome_file, args.spectrum_file,
                                         args.output_dir, args.num_proc)
-        merge_tables(out_files, open(merged_output, "w"))
-        process_genome(merged_output, args.genome_file,
-                       args.e_value, args.output_dir)
+        proc = GenomeProcessor(args.e_value, args.genome_file)
     else:
         out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
                                           args.output_dir, args.num_proc)
-        merge_tables(out_files, open(merged_output, "w"))
-        process_proteome(merged_output, args.prot_coords,
-                         args.e_value, args.output_dir)
+        proc = ProteomeProcessor(args.e_value, args.genome_file,
+                                 args.prot_coords)
+
+    merged_output = os.path.join(args.output_dir, "toppic_merged.txt")
+    merge_tables(out_files, open(merged_output, "w"))
+    out_file = os.path.join(args.output_dir, "identified.gm")
+    proc.process_and_output(merged_output, out_file)
+    proc.copy_html(args.output_dir)
+
     return 0
 
 

@@ -90,10 +90,7 @@ def compare_by_positions(ref_records, qry_records, only_missmatched, blast):
             right = ref_protein.rfind(".")
             inner_prot = ref_protein[left+1:right]
             n_hits = check_blast(inner_prot)
-            if n_hits:
-                print("Hits: {0}".format(n_hits))
-            else:
-                continue
+            print("Hits: {0}".format(n_hits))
 
         found = "+" if matched_qry_fam is not None else "-"
         print("{0}\t{1}\t{2}\t{3:6.2e}\t{4:6.2e}\t{5}\t{6}\t"
