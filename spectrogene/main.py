@@ -204,8 +204,10 @@ def main():
 
     merged_output = os.path.join(args.output_dir, "toppic_merged.txt")
     merge_tables(out_files, open(merged_output, "w"))
-    out_file = os.path.join(args.output_dir, "identified.gm")
-    proc.process_and_output(merged_output, out_file)
+    out_prsms = os.path.join(args.output_dir, "prsms.sg")
+    out_orfs = os.path.join(args.output_dir, "orf_clusters.sg")
+    proc.process_and_output(merged_output, out_prsms)
+    proc.print_orfs(out_orfs)
     proc.copy_html(args.output_dir)
 
     return 0

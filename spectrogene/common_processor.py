@@ -4,11 +4,9 @@ from itertools import combinations
 import os
 import shutil
 
-from Bio.Seq import Seq
-from Bio import SeqIO
-
 from spectrogene.datatypes import (GeneMatch, parse_msalign_output,
-                                   gene_match_serialize)
+                                   gene_match_serialize, get_fasta,
+                                   print_orf_clusters)
 from spectrogene.disjoint_set import MakeSet, Union, Find
 
 
@@ -17,6 +15,7 @@ class CommonProcessor(object):
         self.e_value = e_value
         self.genome_fasta = genome_fasta
         self.prsms = None
+        self.matches = None
 
     def process_and_output(self, toppic_table, out_file):
         prsms = parse_msalign_output(toppic_table)
@@ -34,6 +33,7 @@ class CommonProcessor(object):
                                      p.interval.strand, p.peptide, p.genome_seq))
 
         gene_match_serialize(matches, open(out_file, "w"), False)
+        self.matches = matches
 
     def copy_html(self, out_dir):
         html_dir = os.path.join(out_dir, "prsm_html")
@@ -47,7 +47,7 @@ class CommonProcessor(object):
 
     def assign_genome_seqs(self):
         FLANK_LEN = 10
-        sequences = _get_fasta(self.genome_fasta)
+        sequences = get_fasta(self.genome_fasta)
 
         for record in self.prsms:
             if record.interval.start == -1:
@@ -69,7 +69,7 @@ class CommonProcessor(object):
 
     def assign_orf(self):
         MAX_GAP = 3000  #arbitrary
-        sequences = _get_fasta(self.genome_fasta)
+        sequences = get_fasta(self.genome_fasta)
 
         trusted_prsms = _filter_evalue(self.prsms, self.e_value)
         sets = {r : MakeSet(r) for r in trusted_prsms}
@@ -107,9 +107,19 @@ class CommonProcessor(object):
             for prsm in prsms:
                 prsm.orf_id = orf_id + 1
 
+    def print_orfs(self, out_file):
+        """
+        Pretty printing of the ORF structure
+        """
+        out_stream = open(out_file, "w")
+        by_orf = defaultdict(list)
+        for r in self.matches:
+            if r.orf_id is not None:
+                by_orf[r.orf_id].append(r)
 
-def _get_fasta(filename):
-    return {r.id : r for r in SeqIO.parse(filename, "fasta")}
+        for orf_id, records in by_orf.items():
+            print_orf_clusters(orf_id, [records], self.genome_fasta,
+                               out_stream)
 
 
 def _filter_evalue(prsms, e_value):

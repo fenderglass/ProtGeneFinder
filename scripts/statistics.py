@@ -1,12 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 from __future__ import print_function
+import os
 import sys
 from collections import defaultdict, namedtuple
 
 from Bio import SeqIO
 
-from common import read_gene_matches, Interval
+spectrogene_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, spectrogene_root)
+from spectrogene.datatypes import read_gene_matches, Interval
 
 
 def calc_statistics(gene_matches, genome_file):
