@@ -64,11 +64,11 @@ def calc_statistics(gene_matches, genome_file):
 
 
 def process_group(intervals, sequences):
+    START_CODONS = ["ATG", "GTG", "TTG"]
+
     #TODO: add chr_id to GM
     chr_id = sequences.keys()[0]
 
-    #START_CODONS = ["M", "V", "L"]
-    START_CODONS = ["M"]
     num_matched = len(intervals)
     num_start_codon_right = 0
     num_start_codon_left = 0
@@ -84,8 +84,10 @@ def process_group(intervals, sequences):
             continue
         seq = sequences[chr_id][interval.start - 1 - FLANK :
                                 interval.end + FLANK]
-        peptide = (seq.translate() if interval.strand > 0 else
-                   seq.reverse_complement().translate())
+        if interval.strand < 0:
+            seq = seq.reverse_complement()
+        peptide = seq.translate()
+
         left = FLANK / 3
         right = left + (interval.end - interval.start) / 3
 
@@ -93,7 +95,9 @@ def process_group(intervals, sequences):
         start_ok = False
         stop_ok = False
 
-        if peptide[left - 1] in START_CODONS or peptide[left] in START_CODONS:
+        prec_codon = str(seq[FLANK -3 : FLANK])
+        first_codon = str(seq[FLANK : FLANK + 3])
+        if prec_codon in START_CODONS or first_codon in START_CODONS:
             num_start_codon_left += 1
             start_ok = True
 
