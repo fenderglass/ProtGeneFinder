@@ -78,9 +78,9 @@ def _compare_by_best(ref_records, qry_records, matches, only_missmatched, blast)
 
     for orf_id, ref_records in ref_by_orf.items():
         ref_spec = min(ref_by_orf[orf_id], key=lambda r: r.e_value).spec_id
-        matched_qry_fam = matches[orf_id]
+        matched_qry_fam = matches.get(orf_id, None)
         #now choose best families' spectrum
-        if matched_qry_fam:
+        if matched_qry_fam is not None:
             qry_specs = map(lambda r: r.spec_id, qry_by_orf[matched_qry_fam])
             if ref_spec in qry_specs:
                 qry_spec = ref_spec

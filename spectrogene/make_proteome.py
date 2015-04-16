@@ -10,6 +10,26 @@ def chunks(string, size):
         yield i, string[i:i+size]
 
 
+def orf_partition(sequence):
+    START_CODONS = ["ATG", "GTG", "TTG"]
+    STOP_CODONS = ["TAG", "TAA", "TGA"]
+
+    cur_orf = 0
+    sequence += STOP_CODONS[0]
+    for i in xrange(0, len(sequence), 3):
+        codon = str(sequence[i : i + 3])
+        if codon not in STOP_CODONS:
+            continue
+
+        for start_cand in xrange(cur_orf, i, 3):
+            codon = str(sequence[start_cand : start_cand + 3])
+            if codon in START_CODONS:
+                yield start_cand, sequence[start_cand : i].translate()
+                break
+
+        cur_orf = i + 3
+
+
 def make_proteome(filename, window_size, out_proteome):
     MIN_ORF = 10
     out_fasta = open(out_proteome, "w")
@@ -18,45 +38,37 @@ def make_proteome(filename, window_size, out_proteome):
         #forward
         for frame_shift in range(0, 3):
             trim = (len(record.seq) - frame_shift) % 3
-            prot_seq = (record.seq[frame_shift:-trim].translate() if trim else
-                        record.seq[frame_shift:].translate())
+            genome_seq = (record.seq[frame_shift:-trim] if trim else
+                          record.seq[frame_shift:])
 
             #partition into ORFs
-            orf_shift = frame_shift
-            frames = str(prot_seq).split("*")
-            for orf in frames:
+            for orf_pos, orf in orf_partition(genome_seq):
                 for ovlp in [0, window_size / 2]:
                     for win_pos, window in chunks(orf[ovlp:], window_size):
                         if len(window) < MIN_ORF:
                             continue
 
-                        shift = 3 * (win_pos + ovlp) + orf_shift
+                        shift = 3 * (win_pos + ovlp) + orf_pos + frame_shift
                         window_name = "{0}::fwd_{1}".format(record.id, shift)
-                        SeqIO.write(SeqRecord(seq=Seq(window), id=window_name,
+                        SeqIO.write(SeqRecord(seq=window, id=window_name,
                                     description=""), out_fasta, "fasta")
-
-                orf_shift += (len(orf) + 1) * 3
 
         #reverse
         for frame_shift in range(0, 3):
             trim = (len(record.seq) - frame_shift) % 3
             rev_seq = record.seq.reverse_complement()
-            prot_seq = (rev_seq[frame_shift:-trim].translate() if trim else
-                        rev_seq[frame_shift:].translate())
+            genome_seq = (rev_seq[frame_shift:-trim] if trim else
+                          rev_seq[frame_shift:])
 
             #partition into ORFs
-            orf_shift = frame_shift
-            frames = str(prot_seq).split("*")
-            for orf in frames:
+            for orf_pos, orf in orf_partition(genome_seq):
                 for ovlp in [0, window_size / 2]:
                     for win_pos, window in chunks(orf[ovlp:], window_size):
                         if len(window) < MIN_ORF:
                             continue
 
-                        shift = 3 * (win_pos + ovlp) + orf_shift
+                        shift = 3 * (win_pos + ovlp) + orf_pos + frame_shift
                         shift = len(record.seq) - 1 - shift
                         window_name = "{0}::rev_{1}".format(record.id, shift)
-                        SeqIO.write(SeqRecord(seq=Seq(window), id=window_name,
+                        SeqIO.write(SeqRecord(seq=window, id=window_name,
                                     description=""), out_fasta, "fasta")
-
-                orf_shift += (len(orf) + 1) * 3

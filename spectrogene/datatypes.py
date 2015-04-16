@@ -99,14 +99,13 @@ def print_orf_clusters(orf_id, orf_clusters, genome_fasta, out_stream):
     START_CODONS = ["ATG", "GTG", "TTG"]
     FLANK = 5
 
-    out_stream.write("Orf #{0}\n\n".format(orf_id))
-    #TODO: some orf statistics such as length, number of sequences etc
-
     starts = map(lambda r: r.start, chain(*orf_clusters))
     ends = map(lambda r: r.end, chain(*orf_clusters))
     orf_begin, orf_end = min(starts), max(ends)
     sequences = get_fasta(genome_fasta)
     repr_rec = orf_clusters[0][0]
+    if repr_rec.start == -1:
+        return
 
     #orf sequence
     orf_seq = sequences[repr_rec.chr_id] \
@@ -133,6 +132,11 @@ def print_orf_clusters(orf_id, orf_clusters, genome_fasta, out_stream):
                           .format(" " * FLANK, "." * left_flank,
                                   genome_seq.translate(), "." * right_flank,
                                   rec.spec_id, rec.e_value))
+
+    #TODO: moar statistics
+    orf_len = orf_end - orf_begin + 1
+    out_stream.write("Orf #{0}\tlength = {1}nt\tnum_prsms = {2}\n\n"
+                        .format(orf_id, orf_len, len(starts)))
 
     for cluster in orf_clusters:
         map(lambda r: for_record(r), cluster)
