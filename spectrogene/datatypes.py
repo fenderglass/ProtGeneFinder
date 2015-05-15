@@ -96,8 +96,10 @@ def gene_match_serialize(records, stream, family_mode):
 
 
 def print_orf_clusters(orf_id, orf_clusters, genome_fasta, out_stream):
+    #TODO: group by proteoforms
+    #TODO: show modifications
     START_CODONS = ["ATG", "GTG", "TTG"]
-    FLANK = 5
+    STOP_CODONS = ["TAG", "TAA", "TGA"]
 
     starts = map(lambda r: r.start, chain(*orf_clusters))
     ends = map(lambda r: r.end, chain(*orf_clusters))
@@ -107,36 +109,67 @@ def print_orf_clusters(orf_id, orf_clusters, genome_fasta, out_stream):
     if repr_rec.start == -1:
         return
 
-    #orf sequence
-    orf_seq = sequences[repr_rec.chr_id] \
-                    .seq[orf_begin - FLANK * 3 - 1 : orf_end + FLANK * 3]
+    #getting flanking stop codons
+    def get_orf_flank(seq, orf_begin, strand):
+        left_stop = orf_begin - 3
+        while True:
+            codon = seq[left_stop: left_stop + 3]
+            if strand < 0:
+                codon = str(Seq(codon).reverse_complement())
+            if codon in STOP_CODONS or left_stop < 0:
+                break
+            left_stop -= 3
+        right_stop = orf_begin + 3
+        while True:
+            codon = chr_seq[right_stop: right_stop + 3]
+            if strand < 0:
+                codon = str(Seq(codon).reverse_complement())
+            if codon in STOP_CODONS or right_stop >= len(chr_seq) - 3:
+                break
+            right_stop += 3
+        return left_stop, right_stop
+
+    chr_seq = str(sequences[repr_rec.chr_id].seq)
+    left_stop, right_stop = get_orf_flank(chr_seq, orf_begin - 1,
+                                          repr_rec.strand)
+    orf_seq = chr_seq[left_stop : right_stop + 3]
     if repr_rec.strand < 0:
-        orf_seq = orf_seq.reverse_complement()
+        orf_seq = str(Seq(orf_seq).reverse_complement())
+
     codons_marked = ""
+    first_start = None
     for i in xrange(len(orf_seq) / 3):
-        codon = str(orf_seq[i * 3:(i + 1) * 3])
+        codon = orf_seq[i * 3:(i + 1) * 3]
         codons_marked += "v" if codon in START_CODONS else " "
-    orf_seq = str(orf_seq.translate())
-    out_stream.write("".join(codons_marked) + "\n")
-    out_stream.write(orf_seq + "\n\n")
+        if codon in START_CODONS and not first_start:
+            first_start = i * 3
+    orf_seq = str(Seq(orf_seq).translate())
 
     def for_record(rec):
         left_flank = (rec.start - orf_begin) / 3
         right_flank = (orf_end - rec.end) / 3
+        shift = ((orf_begin - left_stop - 1) / 3 if rec.strand > 0
+                 else (right_stop - orf_end + 3) / 3)
 
         genome_seq = sequences[rec.chr_id].seq[rec.start-1:rec.end]
         if rec.strand < 0:
             genome_seq = genome_seq.reverse_complement()
             left_flank, right_flank = right_flank, left_flank
         out_stream.write("{0}{1}{2}{3}\t{4}\t{5:3.2e}\n"
-                          .format(" " * FLANK, "." * left_flank,
+                          .format(" " * shift, "." * left_flank,
                                   genome_seq.translate(), "." * right_flank,
                                   rec.spec_id, rec.e_value))
 
-    #TODO: moar statistics
-    orf_len = orf_end - orf_begin + 1
-    out_stream.write("Orf #{0}\tlength = {1}nt\tnum_prsms = {2}\n\n"
-                        .format(orf_id, orf_len, len(starts)))
+    orf_cluster_len = (orf_end - orf_begin + 1) / 3
+    orf_len = (right_stop - left_stop - first_start) / 3
+    strand = "+" if repr_rec.strand > 0 else "-"
+    out_stream.write("ORF #{0}; Cluster length {1} aa; "
+                     "ORF length {2} aa; Start {3}; End {4}; Strand {5}; "
+                     "#Prsms {6}\n\n".format(orf_id, orf_cluster_len,
+                     orf_len, left_stop + 3, right_stop - 3,
+                     strand, len(starts)))
+    out_stream.write("".join(codons_marked) + "\n")
+    out_stream.write(orf_seq + "\n\n")
 
     for cluster in orf_clusters:
         map(lambda r: for_record(r), cluster)
@@ -144,4 +177,8 @@ def print_orf_clusters(orf_id, orf_clusters, genome_fasta, out_stream):
 
 
 def get_fasta(filename):
-    return {r.id : r for r in SeqIO.parse(filename, "fasta")}
+    if filename not in get_fasta.cache:
+        get_fasta.cache[filename] = {r.id : r for r in
+                                     SeqIO.parse(filename, "fasta")}
+    return get_fasta.cache[filename]
+get_fasta.cache = {}

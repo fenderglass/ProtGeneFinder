@@ -31,7 +31,7 @@ def calc_statistics(gene_matches, genome_file):
     process_group(identified, sequences)
     ###
 
-    #now group by unique peptides
+    #now group by unique proteoform
     seen = set()
     uniqe_peptides = []
     for gm in identified:
@@ -65,6 +65,8 @@ def calc_statistics(gene_matches, genome_file):
 
 def process_group(intervals, sequences):
     START_CODONS = ["ATG", "GTG", "TTG"]
+    CLEAV_AA = "GASCTPV"
+    NO_CLEAV_AA = "DEFHIKLMNOQRUWY"
 
     #TODO: add chr_id to GM
     chr_id = sequences.keys()[0]
@@ -74,8 +76,10 @@ def process_group(intervals, sequences):
     num_start_codon_left = 0
     num_stop_codon = 0
     num_signal = 0
+    num_weak_signal = 0
     num_orf = 0
     num_stop_inside = 0
+    bad_guys = 0
     lengths = []
 
     for interval in intervals:
@@ -97,8 +101,11 @@ def process_group(intervals, sequences):
 
         prec_codon = str(seq[FLANK -3 : FLANK])
         first_codon = str(seq[FLANK : FLANK + 3])
-        if prec_codon in START_CODONS or first_codon in START_CODONS:
+        if prec_codon in START_CODONS and peptide[left] in CLEAV_AA:
             num_start_codon_left += 1
+            start_ok = True
+        if first_codon in START_CODONS and peptide[left + 1] in NO_CLEAV_AA:
+            num_start_codon_right += 1
             start_ok = True
 
         if peptide[right + 1] == "*":
@@ -108,8 +115,13 @@ def process_group(intervals, sequences):
         if start_ok and stop_ok:
             num_orf += 1
 
-        if (peptide[left - 1] == "A" and peptide[left] == "A"):
-            num_signal += 1
+        if (not start_ok) and (not stop_ok):
+            bad_guys += 1
+
+        if peptide[left - 1] == "A":
+            num_weak_signal += 1
+            if peptide[left - 3] == "A":
+                num_signal += 1
 
         if "*" in peptide[left:right]:
             num_stop_inside += 1
@@ -126,10 +138,15 @@ def process_group(intervals, sequences):
     print("ORF (begins/preceds with start codon AND ends "
           "with stop):\t{0} ({1:4.2f}%)"
           .format(num_orf, 100 * float(num_orf) / num_matched))
+    print("Neither start non stop:\t{0} ({1:4.2f}%)"
+          .format(bad_guys, 100 * float(bad_guys) / num_matched))
+    print("")
     print("Stop Codons inside: {0}".format(num_stop_inside))
     print("")
-    print("Canonical signal peptide site AA:\t{0} ({1:4.2f}%)"
+    print("Canonical signal peptide site A.A:\t{0} ({1:4.2f}%)"
           .format(num_signal, 100 * float(num_signal) / num_matched))
+    print("Weak signal peptide site A:\t{0} ({1:4.2f}%)"
+          .format(num_weak_signal, 100 * float(num_weak_signal) / num_matched))
 
 
 def main():
