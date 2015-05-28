@@ -137,7 +137,9 @@ def _compare_orfs(ref_records, qry_records, matches, genome_fasta):
 
     for orf_id, ref_records in ref_by_orf.items():
         qry_records = qry_by_orf[matches[orf_id]]
-        print_orf_clusters(orf_id, [ref_records, qry_records],
+        print_orf_clusters(orf_id, ref_records,
+                           genome_fasta, sys.stdout)
+        print_orf_clusters(orf_id, qry_records,
                            genome_fasta, sys.stdout)
 
 

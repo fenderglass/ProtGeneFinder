@@ -113,12 +113,16 @@ class CommonProcessor(object):
         """
         out_stream = open(out_file, "w")
         by_orf = defaultdict(list)
+        proteoform_len = {}
         for r in self.matches:
             if r.orf_id is not None:
                 by_orf[r.orf_id].append(r)
+                length = r.end - r.start
+                proteoform_len[r.orf_id] = max(proteoform_len.get(r.orf_id, 0),
+                                               length)
 
-        for orf_id, records in by_orf.items():
-            print_orf_clusters(orf_id, [records], self.genome_fasta,
+        for orf_id in sorted(by_orf, key=proteoform_len.get, reverse=True):
+            print_orf_clusters(orf_id, by_orf[orf_id], self.genome_fasta,
                                out_stream)
 
 
