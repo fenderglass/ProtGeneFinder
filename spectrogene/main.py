@@ -193,21 +193,21 @@ def main():
     args = parser.parse_args(sys.argv[1:])
 
     if args.mode == "genome":
-        out_files = run_parallel_genome(args.genome_file, args.spectrum_file,
-                                        args.output_dir, args.num_proc)
+        #out_files = run_parallel_genome(args.genome_file, args.spectrum_file,
+        #                                args.output_dir, args.num_proc)
         proc = GenomeProcessor(args.e_value, args.genome_file)
     else:
-        out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
-                                          args.output_dir, args.num_proc)
+        #out_files = run_parallel_proteome(args.prot_file, args.spectrum_file,
+        #                                  args.output_dir, args.num_proc)
         proc = ProteomeProcessor(args.e_value, args.genome_file,
                                  args.prot_coords)
 
     merged_output = os.path.join(args.output_dir, "toppic_merged.txt")
-    merge_tables(out_files, open(merged_output, "w"))
+    #merge_tables(out_files, open(merged_output, "w"))
     out_prsms = os.path.join(args.output_dir, "prsms.sg")
     out_orfs = os.path.join(args.output_dir, "orf_clusters.sg")
     proc.process_and_output(merged_output, out_prsms)
     proc.print_orfs(out_orfs)
-    proc.copy_html(args.output_dir)
+    #proc.copy_html(args.output_dir)
 
     return 0

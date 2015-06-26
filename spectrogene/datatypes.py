@@ -177,17 +177,29 @@ def print_orf_clusters(orf_id, prsms, genome_fasta, out_stream):
     ###
 
     ###True gene starts
-    #true_start = None
-    #table = _parse_blast_alignment("datasets/Salmonella_proteome/aln.txt")
-    #for (start, end, _strand) in table.values():
-    #    if left_stop <= start and end <= right_stop:
-    #        if _strand > 0:
-    #            true_start = (start - left_stop) / 3
-    #        else:
-    #            true_start = (right_stop - end) / 3 + 1
-    #        break
-    #if true_start is not None:
-    #    codons_marked = codons_marked[:true_start] + "$" + codons_marked[true_start + 1:]
+    true_start = None
+    table = _parse_blast_alignment("datasets/Salmonella_proteome/aln.txt")
+    for (start, end, _strand) in table.values():
+        if left_stop <= start and end <= right_stop:
+            if _strand > 0:
+                true_start = (start - left_stop) / 3
+            else:
+                true_start = (right_stop - end) / 3 + 1
+            break
+    if true_start is not None:
+        codons_marked = codons_marked[:true_start] + "$" + codons_marked[true_start + 1:]
+
+    #if weak_signal:
+    #    if true_start:
+    #        print(cluster_shift / 3 - true_start)
+
+    #if not nme_good:
+    #    return
+    #if true_start is not None and true_start not in [cluster_shift / 3, cluster_shift / 3 - 1]:
+    #    cl_start = cluster_shift / 3
+    #    if prec_start:
+    #        cl_start -= 1
+    #    print(true_start - cl_start)
     ###
 
     #if true_start in [cluster_shift / 3, cluster_shift / 3 - 1]:
@@ -263,7 +275,7 @@ def _modification_string(prsm_rec):
 
     return mod_str
 
-"""
+
 def _parse_blast_alignment(filename):
     #temp
     table = {}
@@ -291,7 +303,6 @@ def _parse_blast_alignment(filename):
                 table[seq_id] = (ref_start + shift - length, ref_start + shift, strand)
 
     return table
-"""
 
 
 def _bs(x):
