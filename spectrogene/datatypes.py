@@ -168,8 +168,10 @@ def print_orf_clusters(orf_id, prsms, genome_fasta, out_stream):
         nme_good = True
     if prec_start and orf_translated[cluster_shift / 3] in CLEAV_AA:
         nme_good = True
-    weak_signal = orf_translated[cluster_shift / 3 - 1] == "A"
-    strong_signal = weak_signal and orf_translated[cluster_shift / 3 - 3] == "A"
+    weak_signal = (cluster_shift / 3 >= 1 and
+                   orf_translated[cluster_shift / 3 - 1] == "A")
+    strong_signal = (weak_signal and cluster_shift / 3 >= 3 and
+                     orf_translated[cluster_shift / 3 - 3] == "A")
 
     orf_cluster_len = (orf_end - orf_begin + 1) / 3
     orf_len = (right_stop - left_stop - first_start) / 3
