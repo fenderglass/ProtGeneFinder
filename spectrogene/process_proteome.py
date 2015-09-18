@@ -10,7 +10,7 @@ class ProteomeProcessor(CommonProcessor):
         prot_table_data = _parse_blast_alignment(self.prot_alignment)
 
         for rec in self.prsms:
-            prot_id = rec.prot_name.split(" ")[0].split("|")[1]
+            prot_id = rec.prot_name.split(" ")[0]
             if prot_id not in prot_table_data:
                 rec.interval = Interval(-1, -1, 1)
                 continue
@@ -48,7 +48,7 @@ def _parse_blast_alignment(filename):
             if strand < 0:
                 shift = -shift
 
-            seq_id = qry_name.split("|")[1]
-            table[seq_id] = (ref_start + shift, strand, qry_chr)
+            #seq_id = qry_name.split("|")[1]
+            table[qry_name] = (ref_start + shift, strand, qry_chr)
 
     return table
