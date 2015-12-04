@@ -79,7 +79,7 @@ class CommonProcessor(object):
         for rec_1, rec_2 in combinations(trusted_prsms, 2):
             int_1 = rec_1.interval
             int_2 = rec_2.interval
-            if rec_1.chr_id != rec_2.chr_id:
+            if rec_1.chr_id is None or rec_1.chr_id != rec_2.chr_id:
                 continue
 
             #linking into ORFs
