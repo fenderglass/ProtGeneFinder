@@ -14,9 +14,9 @@ import os
 import shutil
 
 from spectrogene.datatypes import (GeneMatch, parse_msalign_output,
-                                   gene_match_serialize, get_fasta,
-                                   print_orf_clusters)
+                                   gene_match_serialize, get_fasta)
 from spectrogene.disjoint_set import MakeSet, Union, Find
+from spectrogene.orf_printer import print_orf_clusters
 
 
 class CommonProcessor(object):
