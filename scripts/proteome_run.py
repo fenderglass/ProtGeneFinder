@@ -61,7 +61,7 @@ def _run_parallel_proteome(input_proteome, input_spectra, work_dir, num_proc):
         inst_prot = os.path.join(inst_workdir, "proteome.fasta")
         shutil.copy2(input_proteome, inst_prot)
 
-        print("Running {0} TopPic instance".format(inst_name))
+        print("Running {0} TopPIC instance".format(inst_name))
         thread = Thread(target=_run_toppic,
                         args=(inst_prot, inst_spec, inst_workdir))
         thread.start()
@@ -104,7 +104,7 @@ def main():
                                           args.output_dir, args.num_proc)
         _merge_toppic_tables(out_files, open(merged_output, "w"))
     else:
-        print("Using TopPic results from the previous run")
+        print("Using TopPIC results from the previous run")
 
     proc = ProteomeProcessor(args.e_value, args.genome_file,
                              args.prot_coords)
