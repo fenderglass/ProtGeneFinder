@@ -24,7 +24,7 @@ LIB_DIR = "lib"
 lib_absolute = os.path.join(spectrogene_root, LIB_DIR)
 sys.path.insert(0, lib_absolute)
 sys.path.insert(0, spectrogene_root)
-os.environ["PATH"] += os.pathsep + lib_absolute
+os.environ["SPECTROGENE_LIB"] = lib_absolute
 
 
 from spectrogene.process_proteome import ProteomeProcessor
@@ -117,8 +117,7 @@ def main():
     out_orfs = os.path.join(args.output_dir, "orf_clusters.txt")
     proc.print_orfs(out_orfs)
 
-    html_dir = os.path.join(args.output_dir, "prsms_html")
-    _copy_html(proc.prsms, html_dir)
+    _copy_html(proc.prsms, args.output_dir)
 
 
 if __name__ == "__main__":
