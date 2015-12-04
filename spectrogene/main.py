@@ -226,7 +226,7 @@ def main():
     out_orfs = os.path.join(args.output_dir, "orf_clusters.txt")
     proc.print_orfs(out_orfs)
 
-    html_dir = os.path.join(args.output_dir, "prsm_html")
+    html_dir = os.path.join(args.output_dir, "prsms_html")
     _copy_html(proc.prsms, html_dir)
 
     return 0

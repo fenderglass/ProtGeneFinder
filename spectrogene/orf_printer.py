@@ -10,10 +10,10 @@ from collections import defaultdict
 
 from Bio.Seq import Seq
 
-from spectrogene.datatypes import get_fasta
+from spectrogene.datatypes import read_fasta
 
 
-def print_orf_clusters(orf_id, prsms, genome_fasta, out_stream):
+def print_orf_clusters(orf_id, prsms, genome_file, out_stream):
     """
     Pretty ORF cluster printer
     """
@@ -25,7 +25,7 @@ def print_orf_clusters(orf_id, prsms, genome_fasta, out_stream):
     starts = map(lambda r: r.start, prsms)
     ends = map(lambda r: r.end, prsms)
     orf_begin, orf_end = min(starts), max(ends)
-    sequences = get_fasta(genome_fasta)
+    sequences = read_fasta(genome_file)
     repr_rec = prsms[0]
     if repr_rec.start == -1:
         return

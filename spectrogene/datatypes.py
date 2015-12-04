@@ -36,7 +36,10 @@ GeneMatch = namedtuple("GeneMatch", ["orf_id", "spec_id", "p_value", "e_value",
                                      "chr_id", "start", "end", "strand",
                                      "peptide", "genome_seq"])
 
-def parse_msalign_output(filename):
+def parse_toppic_output(filename):
+    """
+    Reads TopPic output
+    """
     rows = []
     with open(filename, "r") as f:
         for line in f:
@@ -52,7 +55,10 @@ def parse_msalign_output(filename):
     return rows
 
 
-def read_gene_matches(filename):
+def parse_spectrogene_prsms(filename):
+    """
+    Reads SpectroGene PrSM output
+    """
     gene_matches = []
     with open(filename, "r") as f:
         for line in f:
@@ -71,7 +77,10 @@ def read_gene_matches(filename):
     return gene_matches
 
 
-def gene_match_serialize(records, stream, family_mode):
+def write_spectrogene_prsms(records, stream, family_mode):
+    """
+    Writes SpectroGene PrSMs
+    """
     rec_by_orf = defaultdict(list)
     without_fam = []
     for r in records:
@@ -103,9 +112,9 @@ def gene_match_serialize(records, stream, family_mode):
                                  genome_seq))
 
 
-def get_fasta(filename):
-    if filename not in get_fasta.cache:
-        get_fasta.cache[filename] = {r.id : r for r in
+def read_fasta(filename):
+    if filename not in read_fasta.cache:
+        read_fasta.cache[filename] = {r.id : r for r in
                                      SeqIO.parse(filename, "fasta")}
-    return get_fasta.cache[filename]
-get_fasta.cache = {}
+    return read_fasta.cache[filename]
+read_fasta.cache = {}

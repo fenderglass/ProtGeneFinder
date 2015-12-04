@@ -1,5 +1,14 @@
 #!/usr/bin/env python2.7
 
+#(c) 2015 by Authors
+#This file is a part of SpectroGene program.
+#Released under the BSD license (see LICENSE file)
+
+"""
+This script compares two SpectroGene runs
+(genome and proteome runs, for instance)
+"""
+
 from __future__ import print_function
 import os
 import sys
@@ -12,8 +21,8 @@ from Bio.Blast import NCBIXML
 
 spectrogene_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, spectrogene_root)
-from spectrogene.datatypes import (read_gene_matches, get_fasta,
-                                   print_orf_clusters)
+from spectrogene.datatypes import parse_spectrogene_prsms, read_fasta
+from spectrogene.orf_printer import print_orf_clusters
 
 
 def _get_matches(ref_records, qry_records):
@@ -168,14 +177,14 @@ def _check_blast(query):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare two GM files",
-                                     formatter_class=\
+    parser = argparse.ArgumentParser(description="Compare the results of two "
+                                     "SpectroGene runs", formatter_class=\
                                         argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("ref_table", metavar="ref_table",
-                        help="path to reference table in gm format")
-    parser.add_argument("qry_table", metavar="qry_table",
-                        help="path to querry table in gm format")
+    parser.add_argument("ref_prsms", metavar="ref_table",
+                        help="path to reference prsms")
+    parser.add_argument("qry_prsms", metavar="qry_table",
+                        help="path to query prsms")
     parser.add_argument("-m", "--missmatch", action="store_const",
                         dest="missmatch", default=False, const=True,
                         help="show only missmatches")
@@ -185,8 +194,8 @@ def main():
 
     args = parser.parse_args()
 
-    ref_gene_match = read_gene_matches(args.ref_table)
-    qry_gene_match = read_gene_matches(args.qry_table)
+    ref_gene_match = parse_spectrogene_prsms(args.ref_prsms)
+    qry_gene_match = parse_spectrogene_prsms(args.qry_prsms)
     matches = _get_matches(ref_gene_match, qry_gene_match)
     #_compare_orfs(ref_gene_match, qry_gene_match, matches,
     #              "datasets/Salmonella_msalign/S.Typhimurium.fasta")

@@ -1,5 +1,13 @@
 #!/usr/bin/env python2.7
 
+#(c) 2015 by Authors
+#This file is a part of SpectroGene program.
+#Released under the BSD license (see LICENSE file)
+
+"""
+This script prints the statistics of SpectroGene run
+"""
+
 from __future__ import print_function
 import os
 import sys
@@ -9,7 +17,7 @@ from Bio import SeqIO
 
 spectrogene_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, spectrogene_root)
-from spectrogene.datatypes import read_gene_matches, Interval
+from spectrogene.datatypes import parse_spectrogene_prsms, Interval
 
 
 def calc_statistics(gene_matches, genome_file):
@@ -151,9 +159,12 @@ def process_group(intervals, sequences):
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: statistics.py gm_file genome_file", file=sys.stderr)
+        print("Usage: statistics.py prsms_file genome_file\n\n"
+              "Prints the statistics of SpectroGene run", file=sys.stderr)
         return 1
-    calc_statistics(read_gene_matches(sys.argv[1]), sys.argv[2])
+
+    calc_statistics(parse_spectrogene_prsms(sys.argv[1]), sys.argv[2])
+    return 0
 
 
 if __name__ == "__main__":

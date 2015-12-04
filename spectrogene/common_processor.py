@@ -13,8 +13,8 @@ from itertools import combinations
 import os
 import shutil
 
-from spectrogene.datatypes import (GeneMatch, parse_msalign_output,
-                                   gene_match_serialize, get_fasta)
+from spectrogene.datatypes import (GeneMatch, parse_toppic_output,
+                                   write_spectrogene_prsms, read_fasta)
 from spectrogene.disjoint_set import MakeSet, Union, Find
 from spectrogene.orf_printer import print_orf_clusters
 
@@ -30,7 +30,7 @@ class CommonProcessor(object):
         """
         Postprocesses TopPic output
         """
-        prsms = parse_msalign_output(toppic_table)
+        prsms = parse_toppic_output(toppic_table)
         prsms = _keep_best_spectra(prsms)
         self.prsms = prsms
 
@@ -50,7 +50,7 @@ class CommonProcessor(object):
         """
         Outputs PrSMs into a file
         """
-        gene_match_serialize(self.matches, open(out_file, "w"), False)
+        write_spectrogene_prsms(self.matches, open(out_file, "w"), False)
 
     def _assign_intervals(self):
         """
@@ -63,7 +63,7 @@ class CommonProcessor(object):
         Assigns a sequence from the genome to PrSMs
         """
         FLANK_LEN = 10
-        sequences = get_fasta(self.genome_fasta)
+        sequences = read_fasta(self.genome_fasta)
 
         for record in self.prsms:
             if record.interval.start == -1:
@@ -88,7 +88,7 @@ class CommonProcessor(object):
         Groups PrSMs into ORFs
         """
         MAX_GAP = 3000  #arbitrary
-        sequences = get_fasta(self.genome_fasta)
+        sequences = read_fasta(self.genome_fasta)
 
         trusted_prsms = _filter_evalue(self.prsms, self.e_value)
         sets = {r : MakeSet(r) for r in trusted_prsms}
