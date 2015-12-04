@@ -2,6 +2,10 @@
 #This file is a part of SpectroGene program.
 #Released under the BSD license (see LICENSE file)
 
+"""
+This module creates ORFeome
+"""
+
 from __future__ import print_function
 
 from Bio.Seq import Seq
@@ -9,12 +13,21 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 
 
-def chunks(string, size):
+MIN_ORF_LEN = 10
+
+
+def _chunks(string, size):
+    """
+    Splits the string into chunks of the given size
+    """
     for i in range(0, len(string), size):
         yield i, string[i:i+size]
 
 
-def orf_partition(sequence):
+def _orf_partition(sequence):
+    """
+    Partitions sequence into ORFs (by Stop codons)
+    """
     START_CODONS = ["ATG", "GTG", "TTG"]
     STOP_CODONS = ["TAG", "TAA", "TGA"]
 
@@ -35,7 +48,9 @@ def orf_partition(sequence):
 
 
 def make_proteome(filename, window_size, out_proteome):
-    MIN_ORF = 10
+    """
+    The main function
+    """
     out_fasta = open(out_proteome, "w")
 
     for record in SeqIO.parse(filename, "fasta"):
@@ -46,10 +61,10 @@ def make_proteome(filename, window_size, out_proteome):
                           record.seq[frame_shift:])
 
             #partition into ORFs
-            for orf_pos, orf in orf_partition(genome_seq):
+            for orf_pos, orf in _orf_partition(genome_seq):
                 for ovlp in [0, window_size / 2]:
-                    for win_pos, window in chunks(orf[ovlp:], window_size):
-                        if len(window) < MIN_ORF:
+                    for win_pos, window in _chunks(orf[ovlp:], window_size):
+                        if len(window) < MIN_ORF_LEN:
                             continue
 
                         shift = 3 * (win_pos + ovlp) + orf_pos + frame_shift
@@ -65,10 +80,10 @@ def make_proteome(filename, window_size, out_proteome):
                           rev_seq[frame_shift:])
 
             #partition into ORFs
-            for orf_pos, orf in orf_partition(genome_seq):
+            for orf_pos, orf in _orf_partition(genome_seq):
                 for ovlp in [0, window_size / 2]:
-                    for win_pos, window in chunks(orf[ovlp:], window_size):
-                        if len(window) < MIN_ORF:
+                    for win_pos, window in _chunks(orf[ovlp:], window_size):
+                        if len(window) < MIN_ORF_LEN:
                             continue
 
                         shift = 3 * (win_pos + ovlp) + orf_pos + frame_shift

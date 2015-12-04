@@ -2,6 +2,10 @@
 #This file is a part of SpectroGene program.
 #Released under the BSD license (see LICENSE file)
 
+"""
+An implementation of disjoint set data structure
+"""
+
 class SetObject:
     pass
 

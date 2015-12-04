@@ -2,6 +2,10 @@
 #This file is a part of SpectroGene program.
 #Released under the BSD license (see LICENSE file)
 
+"""
+This class extends CommonProcessor for the proteome run case
+"""
+
 from spectrogene.common_processor import CommonProcessor
 from spectrogene.datatypes import Interval
 
@@ -10,7 +14,10 @@ class ProteomeProcessor(CommonProcessor):
         super(ProteomeProcessor, self).__init__(e_value, genome_fasta)
         self.prot_alignment = prot_alignment
 
-    def assign_intervals(self):
+    def _assign_intervals(self):
+        """
+        A function for assigning genomic coordinate to PrSMs
+        """
         prot_table_data = _parse_blast_alignment(self.prot_alignment)
 
         for rec in self.prsms:
@@ -35,6 +42,10 @@ class ProteomeProcessor(CommonProcessor):
 
 
 def _parse_blast_alignment(filename):
+    """
+    Parses BLAST alignment file and extracts alignment coordinates
+    for each protein
+    """
     table = {}
     with open(filename, "r") as f:
         processsed = set()
@@ -52,7 +63,6 @@ def _parse_blast_alignment(filename):
             if strand < 0:
                 shift = -shift
 
-            #seq_id = qry_name.split("|")[1]
             table[qry_name] = (ref_start + shift, strand, qry_chr)
 
     return table

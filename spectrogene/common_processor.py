@@ -26,14 +26,17 @@ class CommonProcessor(object):
         self.prsms = None
         self.matches = None
 
-    def process_and_output(self, toppic_table, out_file):
+    def process(self, toppic_table):
+        """
+        Postprocesses TopPic output
+        """
         prsms = parse_msalign_output(toppic_table)
         prsms = _keep_best_spectra(prsms)
         self.prsms = prsms
 
-        self.assign_intervals()
-        self.assign_orf()
-        self.assign_genome_seqs()
+        self._assign_intervals()
+        self._assign_orfs()
+        self._assign_genome_seqs()
 
         matches = []
         for p in prsms:
@@ -41,13 +44,24 @@ class CommonProcessor(object):
                                      p.chr_id, p.interval.start, p.interval.end,
                                      p.interval.strand, p.peptide, p.genome_seq))
 
-        gene_match_serialize(matches, open(out_file, "w"), False)
         self.matches = matches
 
-    def assign_intervals(self):
+    def output_prsms(self, out_file):
+        """
+        Outputs PrSMs into a file
+        """
+        gene_match_serialize(self.matches, open(out_file, "w"), False)
+
+    def _assign_intervals(self):
+        """
+        An abstract function for assigning genomic coordinate to PrSMs
+        """
         pass
 
-    def assign_genome_seqs(self):
+    def _assign_genome_seqs(self):
+        """
+        Assigns a sequence from the genome to PrSMs
+        """
         FLANK_LEN = 10
         sequences = get_fasta(self.genome_fasta)
 
@@ -69,7 +83,10 @@ class CommonProcessor(object):
 
             record.genome_seq = translated
 
-    def assign_orf(self):
+    def _assign_orfs(self):
+        """
+        Groups PrSMs into ORFs
+        """
         MAX_GAP = 3000  #arbitrary
         sequences = get_fasta(self.genome_fasta)
 
@@ -111,7 +128,7 @@ class CommonProcessor(object):
 
     def print_orfs(self, out_file):
         """
-        Pretty printing of the ORF structure
+        Pretty printing of the ORFs
         """
         out_stream = open(out_file, "w")
         by_orf = defaultdict(list)
@@ -129,10 +146,17 @@ class CommonProcessor(object):
 
 
 def _filter_evalue(prsms, e_value):
+    """
+    Filters PrSMs given the E-value threshold
+    """
     return list(filter(lambda r: r.e_value < e_value, prsms))
 
 
 def _keep_best_spectra(prsms):
+    """
+    Chooses a match with the best P-value for each spectrum
+    (each spectrum has one match from each iteration)
+    """
     groups = defaultdict(list)
     for rec in prsms:
         groups[rec.spec_id].append(rec)

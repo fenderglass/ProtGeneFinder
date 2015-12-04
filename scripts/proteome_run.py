@@ -105,7 +105,10 @@ def main():
     proc = ProteomeProcessor(args.e_value, args.genome_file,
                              args.prot_coords)
     out_prsms = os.path.join(args.output_dir, "prsms.txt")
-    proc.process_and_output(merged_output, out_prsms)
+    proc.process(merged_output)
+
+    out_prsms = os.path.join(args.output_dir, "prsms.txt")
+    proc.output_prsms(out_prsms)
 
     out_orfs = os.path.join(args.output_dir, "orf_clusters.txt")
     proc.print_orfs(out_orfs)

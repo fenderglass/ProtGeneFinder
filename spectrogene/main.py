@@ -121,7 +121,8 @@ def _split_strings_list(lst, n):
 
 def _run_parallel_genome(input_genome, input_spectra, work_dir, num_proc):
     """
-    Runs toppic in parallel threads given genome and spectra files
+    Generates ORFeome and runs toppic in parallel threads
+    given genome and spectra files
     """
     if not os.path.isdir(work_dir):
         os.mkdir(work_dir)
@@ -217,8 +218,10 @@ def main():
         print("Using TopPic results from the previous run")
 
     proc = GenomeProcessor(args.e_value, args.genome_file)
+    proc.process(merged_output)
+
     out_prsms = os.path.join(args.output_dir, "prsms.txt")
-    proc.process_and_output(merged_output, out_prsms)
+    proc.output_prsms(out_prsms)
 
     out_orfs = os.path.join(args.output_dir, "orf_clusters.txt")
     proc.print_orfs(out_orfs)
