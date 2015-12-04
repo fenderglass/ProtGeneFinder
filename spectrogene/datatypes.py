@@ -1,3 +1,7 @@
+#(c) 2015 by Authors
+#This file is a part of SpectroGene program.
+#Released under the BSD license (see LICENSE file)
+
 from itertools import chain
 from collections import namedtuple, defaultdict
 
@@ -176,27 +180,6 @@ def print_orf_clusters(orf_id, prsms, genome_fasta, out_stream):
     strand = repr_rec.strand > 0
     ###
 
-    ###True gene starts
-    #true_start = None
-    #table = _parse_blast_alignment("datasets/Salmonella_proteome/aln.txt")
-    #for (start, end, _strand) in table.values():
-    #    if left_stop <= start and end <= right_stop:
-    #        if _strand > 0:
-    #            true_start = (start - left_stop) / 3
-    #        else:
-    #            true_start = (right_stop - end) / 3 + 1
-    #        break
-    #if true_start is not None:
-    #    codons_marked = codons_marked[:true_start] + "$" + codons_marked[true_start + 1:]
-    ###
-
-    #if true_start in [cluster_shift / 3, cluster_shift / 3 - 1]:
-    #    return
-    #if strong_signal:
-    #    return
-    #if not (beg_start or prec_start):
-    #    return
-
     out_stream.write("=" * len(codons_marked) + "\n\n")
     out_stream.write("ORF#: {0}\nCluster length: {1} aa\n"
                      "ORF length: {2} aa\n#Prsms: {6}\n"
@@ -262,36 +245,6 @@ def _modification_string(prsm_rec):
             mod_str += " "
 
     return mod_str
-
-"""
-def _parse_blast_alignment(filename):
-    #temp
-    table = {}
-    with open(filename, "r") as f:
-        processsed = set()
-        for line in f:
-            tokens = line.strip().split()
-            qry_name, qry_chr, qry_start, qry_end, ref_start, ref_end  = \
-                    (tokens[0], tokens[1], int(tokens[6]), int(tokens[7]),
-                     int(tokens[8]), int(tokens[9]))
-            if qry_name in processsed:
-                continue
-
-            processsed.add(qry_name)
-            strand = 1 if ref_start < ref_end else -1
-            shift = -(qry_start - 1) * 3
-            if strand < 0:
-                shift = -shift
-
-            seq_id = qry_name.split("|")[1]
-            length = abs(qry_start - qry_end) * 3
-            if strand > 0:
-                table[seq_id] = (ref_start + shift, ref_start + shift + length, strand)
-            else:
-                table[seq_id] = (ref_start + shift - length, ref_start + shift, strand)
-
-    return table
-"""
 
 
 def _bs(x):

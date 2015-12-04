@@ -1,3 +1,7 @@
+#(c) 2015 by Authors
+#This file is a part of SpectroGene program.
+#Released under the BSD license (see LICENSE file)
+
 class SetObject:
     pass
 

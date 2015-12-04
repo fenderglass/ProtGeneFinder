@@ -1,3 +1,12 @@
+#(c) 2015 by Authors
+#This file is a part of SpectroGene program.
+#Released under the BSD license (see LICENSE file)
+
+"""
+This module represents an abstract class
+with main SpectroGene functions
+"""
+
 from __future__ import print_function
 from collections import namedtuple, defaultdict
 from itertools import combinations
@@ -34,13 +43,6 @@ class CommonProcessor(object):
 
         gene_match_serialize(matches, open(out_file, "w"), False)
         self.matches = matches
-
-    def copy_html(self, out_dir):
-        html_dir = os.path.join(out_dir, "prsm_html")
-        if os.path.isdir(html_dir):
-            shutil.rmtree(html_dir)
-        os.mkdir(html_dir)
-        _copy_html(self.prsms, html_dir)
 
     def assign_intervals(self):
         pass
@@ -141,9 +143,3 @@ def _keep_best_spectra(prsms):
         to_keep.add(by_eval[0])
 
     return [r for r in prsms if r in to_keep]
-
-
-def _copy_html(prsms, out_dir):
-    for prsm in prsms:
-        html_name = os.path.join(out_dir, "spec{0}.html".format(prsm.spec_id))
-        shutil.copy2(prsm.html, html_name)
