@@ -26,14 +26,18 @@ TOPPIC_BIN = "toppic"
 WINDOWS = [500, 200, 50]
 
 
-def _run_toppic(proteome_file, spectra_file, work_dir):
+def _run_toppic(proteome_file, spectra_file, work_dir, thread_error):
     """
     Invokes TopPIC binary
     """
     binary_path = os.path.join(LIB_DIR, TOPPIC_BIN)
     cmdline = [binary_path, proteome_file, spectra_file, "--max-ptm", "500",
                "--generating-function", "--cutoff-value", "100"]
-    subprocess.check_call(cmdline, stdout=open(os.devnull, "w"))
+    try:
+        subprocess.check_call(cmdline, stdout=open(os.devnull, "w"))
+    except (subprocess.CalledProcessError, OSError) as e:
+        print("Error running TopPIC: " + str(e))
+        thread_error[0] = 1
 
 
 def _merge_toppic_tables(tables, out_stream):
@@ -61,7 +65,6 @@ def _merge_toppic_tables(tables, out_stream):
                 html = os.path.join(directory, "spectra_html", "prsms",
                                     "prsm{0}.html".format(old_prsm_id))
                 vals.append(html)
-
                 out_stream.write("\t".join(vals) + "\n")
 
 
@@ -134,6 +137,7 @@ def _run_parallel_genome(input_genome, input_spectra, work_dir, num_proc):
     input_spectra = os.path.abspath(input_spectra)
     input_genome = os.path.abspath(input_genome)
     output_files = []
+    thread_error = [0]
 
     for window in WINDOWS:
         print("Running with window size", window)
@@ -163,8 +167,8 @@ def _run_parallel_genome(input_genome, input_spectra, work_dir, num_proc):
             shutil.copy2(prot_file, inst_prot)
 
             print("Running {0} TopPIC instance".format(inst_name))
-            thread = Thread(target=_run_toppic,
-                            args=(inst_prot, inst_spec, inst_workdir))
+            thread = Thread(target=_run_toppic, args=(inst_prot, inst_spec,
+                                                inst_workdir, thread_error))
             thread.start()
             threads.append(thread)
 
@@ -173,6 +177,10 @@ def _run_parallel_genome(input_genome, input_spectra, work_dir, num_proc):
 
         for t in threads:
             t.join()
+
+        if thread_error[0] != 0:
+            print("There were errors running TopPIC, exiting")
+            return None
 
     return output_files
 
@@ -183,7 +191,8 @@ def _copy_html(prsms, output_dir):
     """
     html_resources = os.path.join(LIB_DIR, "toppic_resources", "web")
     resources_dest = os.path.join(output_dir, "resources")
-    shutil.copytree(html_resources, resources_dest)
+    if not os.path.isdir(resources_dest):
+        shutil.copytree(html_resources, resources_dest)
 
     html_dir = os.path.join(output_dir, "html_prsms")
     if not os.path.isdir(html_dir):
@@ -220,6 +229,8 @@ def main():
     if not os.path.isfile(merged_output):
         out_files = _run_parallel_genome(args.genome_file, args.spectra_file,
                                         args.output_dir, args.num_proc)
+        if out_files is None:
+            return 1
         _merge_toppic_tables(out_files, open(merged_output, "w"))
     else:
         print("Using TopPIC results from the previous run")

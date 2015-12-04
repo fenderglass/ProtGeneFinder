@@ -47,6 +47,7 @@ def _run_parallel_proteome(input_proteome, input_spectra, work_dir, num_proc):
     spec_splitted = _split_strings_list(spectra_text, num_proc)
     threads = []
     output_files = []
+    thread_error = [0]
 
     for i in range(num_proc):
         inst_name = "part_{0}".format( i)
@@ -62,8 +63,8 @@ def _run_parallel_proteome(input_proteome, input_spectra, work_dir, num_proc):
         shutil.copy2(input_proteome, inst_prot)
 
         print("Running {0} TopPIC instance".format(inst_name))
-        thread = Thread(target=_run_toppic,
-                        args=(inst_prot, inst_spec, inst_workdir))
+        thread = Thread(target=_run_toppic, args=(inst_prot, inst_spec,
+                                            inst_workdir, thread_error))
         thread.start()
         threads.append(thread)
 
@@ -72,6 +73,10 @@ def _run_parallel_proteome(input_proteome, input_spectra, work_dir, num_proc):
 
     for t in threads:
         t.join()
+
+    if thread_error[0] != 0:
+        print("There were errors running TopPIC, exiting")
+        return None
 
     return output_files
 
@@ -102,6 +107,9 @@ def main():
     if not os.path.isfile(merged_output):
         out_files = _run_parallel_proteome(args.prot_file, args.spectra_file,
                                           args.output_dir, args.num_proc)
+        if out_files is None:
+            return 1
+
         _merge_toppic_tables(out_files, open(merged_output, "w"))
     else:
         print("Using TopPIC results from the previous run")
@@ -119,6 +127,8 @@ def main():
 
     _copy_html(proc.prsms, args.output_dir)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

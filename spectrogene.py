@@ -23,9 +23,9 @@ if sys.version_info[:2] != (2, 7):
 #Setting executable paths
 spectrogene_root = os.path.dirname(os.path.realpath(__file__))
 lib_absolute = os.path.join(spectrogene_root, LIB_DIR)
+os.environ["SPECTROGENE_LIB"] = lib_absolute
 sys.path.insert(0, lib_absolute)
 sys.path.insert(0, spectrogene_root)
-os.environ["PATH"] += os.pathsep + lib_absolute
 
 #Spectrogene entry point
 from spectrogene.main import main

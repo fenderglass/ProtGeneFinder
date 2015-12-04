@@ -25,7 +25,7 @@ Requirements
 
 * Python 2.7
 * TopPIC (included) [http://proteomics.informatics.iupui.edu/software/toppic/]
-* Biopython [biopython.org]
+* Biopython [http://biopython.org]
 
 
 Install
