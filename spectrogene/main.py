@@ -145,7 +145,7 @@ def _run_parallel_genome(input_genome, input_spectra, work_dir, num_proc):
         if not os.path.isdir(window_dir):
             os.mkdir(window_dir)
 
-        print("Creating proteome")
+        print("Generating ORFeome")
         prot_file = os.path.join(window_dir, "proteome.fasta")
         make_proteome(input_genome, window, prot_file)
         print("Reading spectra")

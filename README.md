@@ -74,6 +74,11 @@ Authors
 * Mikhail Kolmogorov (UCSD)
 
 
+License
+-------
+The program is distributed under BSD license. See LICENSE file for details.
+
+
 Citation
 --------
 * Mikhail Kolmogorov, Xiaowen Liu and Pavel Pevzner. "SpectroGene: a tool for proteogenomic annotations using top-down spectra"
