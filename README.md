@@ -59,19 +59,83 @@ Quick Usage
       --version             show program's version number and exit
 
 
-Detailed Instructions
----------------------
+Running Instructions
+--------------------
+
+SpectroGene takes as input:
+
+* Genome file in FASTA format
+* Deconvoluted top-down spectra in msalign format (similar to MGF)
+
+A typical pipeline for raw spectra (such as from Thermo Scientific™ Orbitrap™ 
+mass spectrometers) would include centroiding and deconvolution.
+
+First, raw spectra should be centroided and converted to mzXML format,
+which could be done using msconvert utility 
+[available for Windows only: http://proteowizard.sourceforge.net/tools.shtml].
+Here is an example command line:
+
+    msconvert.exe --filter "peakPicking true 1-" --mzXML --zlib spectra.raw
+
+Then, the resulting mzXML file should be deconvoluted using MsDeconv
+software [http://bix.ucsd.edu/projects/msdeconv/]:
+
+    java -jar msdeconv.jar spectra.mzXML -o msalign
+
+Finally, you can run SpectroGene on resulting .msalign file:
+
+    ./spectrogene.py genome.fasta spectra.msalign
 
 
+Output
+------
 
-Output formats
+SpectroGene provides three kinds of output:
+
+* PrSMs mapped on the genome sequence
+* HTML visualisation of PrSMs (done by TopPIC)
+* ORF clusters of identified proteoforms
+
+PrSMs are output into a file called "prsms.txt" in the output directory.
+It is formatted as CSV table and have self-explanatory columns.
+A graphical representations of all identified spectra in HTML
+fromat could be found in "html_prsms" directory.
+
+Also, raw TopPIC output with additional spectra information is available 
+in "toppic_merged.txt" file.
+
+The information about identified ORF cluster is output into "orf_clusters.txt"
+file. For each cluster multiple statistics are provided (such as positions,
+number of spectra/proteoforms etc.). Below the statistics, proteoforms aligned
+on the ORF sequence are shown. Putative Start codons are marked with "v"
+symbol on the top of the ORF sequence. Each proteoform might have multiple corresponding
+spectra. In that case, we choose the spectra with the lowest P-value as representative.
+Spectra id and its P-value are shown on the right side of the proteoforms.
+Also, the post-translational modifications are shown above the corresponding
+proteoforms (with numbers corresponding to a modification weight).
+
+
+Useful scripts
 --------------
 
+SpectrGene distribution also contain some additional scripts 
+located in "scripts" directory which might be useful:
 
+**merge_msalign.py**
 
-Authors
--------
-* Mikhail Kolmogorov (UCSD)
+Merges multiple msalign spectra files into one.
+
+**statistics.py**
+
+Provides some extra statistics on the SpectroGene run.
+
+**compare.py**
+
+Compares two SpectrGene runs (for benchmarking purposes, for example)
+
+**proteome_run.py**
+
+Runs SpectroGene with a known proteome (also for benchmarking, see the paper for details).
 
 
 License
@@ -82,6 +146,11 @@ The program is distributed under BSD license. See LICENSE file for details.
 Citation
 --------
 * Mikhail Kolmogorov, Xiaowen Liu and Pavel Pevzner. "SpectroGene: a tool for proteogenomic annotations using top-down spectra"
+
+
+Authors
+-------
+* Mikhail Kolmogorov (UCSD)
 
 
 Contacts
