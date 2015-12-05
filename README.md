@@ -110,16 +110,16 @@ number of spectra/proteoforms etc.). Below the statistics, proteoforms aligned
 on the ORF sequence are shown. Putative Start codons are marked with "v"
 symbol on the top of the ORF sequence. Each proteoform might have multiple corresponding
 spectra. In that case, we choose the spectra with the lowest P-value as representative.
-Spectra id and its P-value are shown on the right side of the proteoforms.
-Also, the post-translational modifications are shown above the corresponding
+Representative spectra ids and P-values are shown on the right side of the proteoforms.
+Also, post-translational modifications are shown above the corresponding
 proteoforms (with numbers corresponding to a modification weight).
 
 
 Useful scripts
 --------------
 
-SpectrGene distribution also contain some additional scripts 
-located in "scripts" directory which might be useful:
+SpectrGene distribution also contain some additional scripts
+which might be useful (located in "scripts" directory):
 
 **merge_msalign.py**
 
@@ -131,7 +131,7 @@ Provides some extra statistics on the SpectroGene run.
 
 **compare.py**
 
-Compares two SpectrGene runs (for benchmarking purposes, for example)
+Compares two SpectrGene runs (for benchmarking purposes)
 
 **proteome_run.py**
 
